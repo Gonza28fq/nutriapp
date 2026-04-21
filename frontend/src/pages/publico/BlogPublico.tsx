@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { BookOpen, Tag, ArrowRight, Search } from "lucide-react";
-import { blogService, BlogPost, BlogCategoria } from "@/services/blog.service";
+import { BlogPost, BlogCategoria } from "@/services/blog.service";
 
 function useInView(threshold = 0.1) {
   const ref = useRef<HTMLDivElement>(null);

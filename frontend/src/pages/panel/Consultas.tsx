@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ClipboardList, User, Calendar, MapPin, Download, Search, ChevronRight, Filter } from "lucide-react";
+import { ClipboardList, Calendar, MapPin, Download, Search, ChevronRight, Filter } from "lucide-react";
 import { consultaService } from "@/services/consulta.service";
 import { Consulta } from "@/types";
 import { exportarConsultasExcel } from "@/services/export.service";

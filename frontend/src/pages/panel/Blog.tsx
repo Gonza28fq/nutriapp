@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Plus, BookOpen, Edit2, Trash2, Eye, EyeOff, Archive, X, Tag, Search,
-  Globe, Star, Layers, BarChart2, AlignLeft, Save, Check
+  Globe, Star, Layers, BarChart2, AlignLeft, Save,
 } from "lucide-react";
 import { blogService, BlogPost, BlogPostForm, BlogCategoria } from "@/services/blog.service";
 import { recetaService, Receta } from "@/services/receta.services";

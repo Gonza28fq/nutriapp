@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Tag, Calendar, BookOpen, Utensils } from "lucide-react";
-import { blogService, BlogPost } from "@/services/blog.service";
+import { BlogPost } from "@/services/blog.service";
 
 export default function PostPublico() {
   const { slug }  = useParams();

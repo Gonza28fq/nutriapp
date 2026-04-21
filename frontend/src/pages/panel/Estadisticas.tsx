@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
-import { Users, ClipboardList, Calendar, TrendingUp, Download } from "lucide-react";
+import { Users, ClipboardList, Calendar, TrendingUp,} from "lucide-react";
 import api from "@/services/api";
 import toast from "react-hot-toast";
 
