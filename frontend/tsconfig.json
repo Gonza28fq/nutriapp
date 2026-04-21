@@ -12,12 +12,16 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "strict": true,
+    
+    /* Estas dos líneas evitan que el build falle por variables no usadas */
     "noUnusedLocals": false,
     "noUnusedParameters": false,
+    
     "noFallthroughCasesInSwitch": true,
-    "baseUrl": ".",
+    
+    /* Corrección de BaseUrl y Paths */
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"]
