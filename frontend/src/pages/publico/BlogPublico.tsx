@@ -35,6 +35,9 @@ export default function BlogPublico() {
   const [busqueda, setBusqueda]     = useState("");
   const [catFiltro, setCatFiltro]   = useState("");
 
+  const API = import.meta.env.VITE_API_URL?.replace("/api", "") || "";
+  fetch(`${API}/api/blog/publico`)
+
  useEffect(() => {
     fetch("/api/blog/publico")
       .then(r => r.json())

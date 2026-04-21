@@ -9,6 +9,9 @@ export default function PostPublico() {
   const [post, setPost]         = useState<BlogPost | null>(null);
   const [cargando, setCargando] = useState(true);
 
+  const API = import.meta.env.VITE_API_URL?.replace("/api", "") || "";
+  fetch(`${API}/api/blog/publico/${slug}`)
+
   useEffect(() => {
     if (!slug) return;
     fetch(`/api/blog/publico/${slug}`)
