@@ -70,18 +70,23 @@ export default function Inicio() {
     window.addEventListener("scroll", handler, { passive: true });
     return () => window.removeEventListener("scroll", handler);
   }, []);
+  
+const API = import.meta.env.VITE_API_URL?.replace("/api", "") || "";
 
   useEffect(() => {
-    fetch("/api/blog/publico").then(r=>r.json()).then(res=>{ if(res.ok) setPosts(res.data.slice(0,6)); }).catch(()=>{});
-    fetch("/api/configuracion/publica").then(r=>r.json()).then(res=>{ if(res.ok&&res.data) setConfig(res.data); }).catch(()=>{});
-    fetch("/api/sitio/publico").then(r=>r.json()).then(res=>{
-      if(!res.ok) return;
-      const d = res.data;
-      if(d.testimonios?.length) setTestimonios(d.testimonios);
-      if(d.servicios?.length)   setServicios(d.servicios);
-      if(d.stats?.length)       setStats(d.stats);
-      if(d.secciones)           setSecciones(prev=>({...prev,...d.secciones}));
-    }).catch(()=>{});
+    fetch(`${API}/api/blog/publico`)
+      .then(r=>r.json()).then(res=>{ if(res.ok) setPosts(res.data.slice(0,6)); }).catch(()=>{});
+    fetch(`${API}/api/configuracion/publica`)
+      .then(r=>r.json()).then(res=>{ if(res.ok&&res.data) setConfig(res.data); }).catch(()=>{});
+    fetch(`${API}/api/sitio/publico`)
+      .then(r=>r.json()).then(res=>{
+        if(!res.ok) return;
+        const d = res.data;
+        if(d.testimonios?.length) setTestimonios(d.testimonios);
+        if(d.servicios?.length)   setServicios(d.servicios);
+        if(d.stats?.length)       setStats(d.stats);
+        if(d.secciones)           setSecciones(prev=>({...prev,...d.secciones}));
+      }).catch(()=>{});
   }, []);
 
   const slides: BlogPost[][] = [];
