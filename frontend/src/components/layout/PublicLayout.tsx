@@ -20,8 +20,10 @@ export default function PublicLayout() {
   const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
 
+  const API = import.meta.env.VITE_API_URL?.replace("/api", "") || "";
+
   useEffect(() => {
-    fetch("/api/configuracion/publica")
+    fetch(`${API}/api/configuracion/publica`)
       .then(r => r.json())
       .then(res => { if (res.ok && res.data) setConfig(res.data); })
       .catch(() => {});
@@ -29,7 +31,7 @@ export default function PublicLayout() {
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 40);
-    window.addEventListener("scroll", handler);
+    window.addEventListener("scroll", handler, { passive: true });
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
@@ -47,35 +49,32 @@ export default function PublicLayout() {
           borderBottom: scrolled ? "1px solid rgba(139,109,56,0.12)" : "none",
           boxShadow: scrolled ? "0 2px 20px rgba(0,0,0,0.06)" : "none",
         }}>
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <NavLink to="/" className="flex items-center gap-3">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+          <NavLink to="/" className="flex items-center gap-2 sm:gap-3">
             {config.logo_url ? (
-              <img src={config.logo_url} alt="logo" className="h-8 object-contain" />
+              <img src={config.logo_url} alt="logo" className="h-7 sm:h-8 object-contain" />
             ) : (
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center"
                 style={{ background: "linear-gradient(135deg, #5c8a3c, #3d6b2a)" }}>
                 <Leaf className="w-4 h-4 text-white" />
               </div>
             )}
-            <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "1.15rem", fontWeight: 700, color: "#1c1208" }}>
+            <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "1.05rem", fontWeight: 700, color: "#1c1208" }}>
               {config.nombre_app}
             </span>
           </NavLink>
 
           {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-8">
-            <NavLink to="/" end
-              className="text-sm font-medium transition-colors"
+          <div className="hidden md:flex items-center gap-6 lg:gap-8">
+            <NavLink to="/" end className="text-sm font-medium transition-colors"
               style={({ isActive }) => ({ color: isActive ? "#5c8a3c" : "#6b5a3e" })}>
               Inicio
             </NavLink>
-            <NavLink to="/blog"
-              className="text-sm font-medium transition-colors"
+            <NavLink to="/blog" className="text-sm font-medium transition-colors"
               style={({ isActive }) => ({ color: isActive ? "#5c8a3c" : "#6b5a3e" })}>
               Blog
             </NavLink>
-            <button
-              onClick={() => navigate("/login")}
+            <button onClick={() => navigate("/login")}
               className="text-sm font-medium px-5 py-2 rounded-full transition-all"
               style={{ background: "#5c8a3c", color: "white", boxShadow: "0 2px 12px rgba(92,138,60,0.3)" }}>
               Acceder
@@ -83,7 +82,7 @@ export default function PublicLayout() {
           </div>
 
           {/* Mobile menu button */}
-          <button className="md:hidden p-2 rounded-xl" style={{ color: "#6b5a3e" }}
+          <button className="md:hidden p-2 rounded-xl" style={{ color: scrolled ? "#6b5a3e" : "#f5ede0" }}
             onClick={() => setMenuAbierto(v => !v)}>
             {menuAbierto ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -91,16 +90,18 @@ export default function PublicLayout() {
 
         {/* Mobile menu */}
         {menuAbierto && (
-          <div className="md:hidden px-6 pb-6 pt-2 space-y-3"
+          <div className="md:hidden px-4 pb-5 pt-2 space-y-2"
             style={{ background: "rgba(250,248,244,0.98)", borderBottom: "1px solid rgba(139,109,56,0.12)" }}>
             <NavLink to="/" end onClick={() => setMenuAbierto(false)}
-              className="block text-sm font-medium py-2" style={{ color: "#6b5a3e" }}>Inicio</NavLink>
+              className="block text-sm font-medium py-2.5 px-3 rounded-xl"
+              style={{ color: "#6b5a3e" }}>Inicio</NavLink>
             <NavLink to="/blog" onClick={() => setMenuAbierto(false)}
-              className="block text-sm font-medium py-2" style={{ color: "#6b5a3e" }}>Blog</NavLink>
+              className="block text-sm font-medium py-2.5 px-3 rounded-xl"
+              style={{ color: "#6b5a3e" }}>Blog</NavLink>
             <button onClick={() => { setMenuAbierto(false); navigate("/login"); }}
-              className="w-full text-sm font-medium px-5 py-2.5 rounded-full text-center"
+              className="w-full text-sm font-medium px-5 py-3 rounded-full text-center mt-1"
               style={{ background: "#5c8a3c", color: "white" }}>
-              Acceder
+              Acceder al panel
             </button>
           </div>
         )}
@@ -113,8 +114,8 @@ export default function PublicLayout() {
 
       {/* ── Footer ── */}
       <footer style={{ background: "#1c1208", color: "#c9b99a" }}>
-        <div className="max-w-6xl mx-auto px-6 py-16">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-12 mb-12">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-12 mb-10">
 
             {/* Logo + tagline */}
             <div className="space-y-4">
