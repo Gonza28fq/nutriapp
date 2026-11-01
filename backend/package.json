@@ -10,7 +10,8 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "migrate": "ts-node --transpile-only src/scripts/migrate.ts",
-    "copiar-datos": "ts-node --transpile-only src/scripts/mysql-a-postgres.ts"
+    "copiar-datos": "ts-node --transpile-only src/scripts/mysql-a-postgres.ts",
+    "analisis-impacto": "ts-node --transpile-only src/scripts/analisis-impacto.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
