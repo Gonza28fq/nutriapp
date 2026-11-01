@@ -75,7 +75,7 @@ function ChipReloj({ ahora }: { ahora: Date }) {
     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 border text-sm"
       style={{ borderColor: "var(--color-card-border)" }}>
       <span className="font-bold tabular-nums" style={{ color: "var(--color-text)" }}>
-        {ahora.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+        {ahora.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false })}
       </span>
       <span className="hidden md:inline font-semibold capitalize" style={{ color: "var(--color-text-muted)" }}>
         {ahora.toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" })}

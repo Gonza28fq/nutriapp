@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Pencil, Plus, Save, X, ArrowDown, ArrowUp } from "lucide-react";
 import { clinicaService, mensajeError, num, type Medicion } from "@/services/clinica.service";
@@ -112,6 +112,16 @@ export default function TabCuerpo({ pacienteId, sexo, mediciones, recargar }: {
   const [borrador, setBorrador] = useState<Record<Clave, string>>({} as Record<Clave, string>);
   const [fechaNueva, setFechaNueva] = useState(fechaISO());
   const [guardando, setGuardando] = useState(false);
+
+  // Las mediciones pueden llegar después del primer render: cuando aparecen,
+  // se elige la última (y la primera para comparar) y se sale del modo carga
+  // si todavía no se escribió nada.
+  useEffect(() => {
+    if (idActual !== null || conMedidas.length === 0) return;
+    setIdActual(conMedidas[conMedidas.length - 1].id);
+    if (conMedidas.length > 1) setIdComparar(conMedidas[0].id);
+    if (carga === "nueva" && Object.values(borrador).every((v) => !v)) setCarga(null);
+  }, [conMedidas]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const actual = conMedidas.find((m) => m.id === idActual) ?? null;
   const comparar = conMedidas.find((m) => m.id === idComparar) ?? null;
