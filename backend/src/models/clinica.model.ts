@@ -76,7 +76,61 @@ function derivarMedicion(data: Datos): Datos {
 }
 const CAMPOS_MEDICION_CON_DERIVADOS = [...CAMPOS_MEDICION, "imc", "clasificacion_imc", "indice_cintura_cadera"];
 
+type TablaClinica = "mediciones" | "laboratorios" | "estudios";
+
 export const ClinicaModel = {
+  /** Fila de una tabla clínica (para saber a qué paciente pertenece antes de editar/borrar). */
+  async fila(tabla: TablaClinica, id: number): Promise<Datos | null> {
+    const [[row]] = await pool.query<Datos[]>(`SELECT * FROM ${tabla} WHERE id = ?`, [id]);
+    return row ?? null;
+  },
+
+  async patologia(id: number) {
+    const [[row]] = await pool.query<Datos[]>("SELECT id, codigo, nombre FROM patologias WHERE id = ?", [id]);
+    return row ?? null;
+  },
+
+  // ── Seguimiento: línea de tiempo + traza ────────────────────────────────
+  async seguimiento(pacienteId: number) {
+    const [eventos] = await pool.query(
+      `SELECT * FROM (
+         SELECT 'consulta' AS tipo, c.id, c.fecha, c.creado_en,
+                CASE c.tipo_consulta WHEN 'primera_vez' THEN 'Primera consulta' WHEN 'control' THEN 'Consulta de control'
+                     ELSE 'Consulta de seguimiento' END AS titulo,
+                coalesce(c.motivo_consulta, c.objetivos) AS detalle
+         FROM consultas c WHERE c.paciente_id = ?
+         UNION ALL
+         SELECT 'medicion', m.id, m.fecha, NULL, 'Medición',
+                concat_ws(' · ', m.peso_kg || ' kg', 'IMC ' || m.imc, m.porcentaje_masa_grasa || '% grasa',
+                          'cintura ' || m.circunferencia_cintura_cm || ' cm')
+         FROM mediciones m WHERE m.paciente_id = ?
+         UNION ALL
+         SELECT 'laboratorio', l.id, l.fecha, NULL, 'Laboratorio',
+                concat_ws(' · ', 'glucemia ' || l.glucemia || ' mg/dl', 'HbA1c ' || l.hemoglobina_glicosilada || '%',
+                          'colesterol ' || l.colesterol_total || ' mg/dl')
+         FROM laboratorios l WHERE l.paciente_id = ?
+         UNION ALL
+         SELECT 'estudio', e.id, e.fecha, e.creado_en, e.nombre, concat_ws(' · ', e.lugar, e.resultado_resumen)
+         FROM estudios e WHERE e.paciente_id = ?
+         UNION ALL
+         SELECT 'plan', p.id, coalesce(p.fecha_inicio, p.creado_en::date), p.creado_en,
+                coalesce(p.nombre, 'Plan alimentario'), 'Estado: ' || p.estado
+         FROM planes p WHERE p.paciente_id = ?
+         UNION ALL
+         SELECT 'turno', t.id, t.fecha, t.creado_en, 'Turno', concat_ws(' · ', to_char(t.hora, 'HH24:MI'), t.estado)
+         FROM turnos t WHERE t.paciente_id = ?
+       ) ev
+       ORDER BY fecha DESC, creado_en DESC NULLS LAST, id DESC`,
+      [pacienteId, pacienteId, pacienteId, pacienteId, pacienteId, pacienteId]
+    );
+    const [traza] = await pool.query(
+      `SELECT id, usuario, entidad, entidad_id, accion, resumen, creado_en
+       FROM auditoria WHERE paciente_id = ? ORDER BY creado_en DESC, id DESC LIMIT 200`,
+      [pacienteId]
+    );
+    return { eventos, traza };
+  },
+
   // ── Patologías ──────────────────────────────────────────────────────────
   /** Catálogo con la cantidad de pacientes activos que tienen cada patología. */
   async catalogoPatologias() {

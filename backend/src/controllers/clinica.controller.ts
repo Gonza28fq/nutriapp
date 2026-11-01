@@ -5,6 +5,7 @@ import { PacienteModel } from "../models/paciente.model";
 import { AuthRequest } from "../types";
 import { AppError } from "../middlewares/error.middleware";
 import { validar } from "../middlewares/validation.middleware";
+import { auditar } from "../utils/auditoria";
 
 // ── Validadores ───────────────────────────────────────────────────────────
 // Rangos fisiológicos amplios: frenan errores de tipeo (950 kg, glucemia 5)
@@ -85,6 +86,38 @@ const h = (fn: Handler) => (req: AuthRequest, res: Response, next: NextFunction)
 const noEncontrado = (ok: boolean, que: string) => { if (!ok) throw new AppError(`${que} no encontrado`, 404); };
 
 // ── Controlador ───────────────────────────────────────────────────────────
+type TablaClinica = "mediciones" | "laboratorios" | "estudios";
+const ENTIDAD: Record<TablaClinica, string> = { mediciones: "medicion", laboratorios: "laboratorio", estudios: "estudio" };
+
+/** Crea un registro clínico del paciente y deja la traza. */
+const crearRegistro = (tabla: TablaClinica, crear: (pid: number, d: Record<string, unknown>) => Promise<number>, resumen: (d: any) => string) =>
+  h(async (req, res) => {
+    const pacienteId = idParam(req);
+    await pacienteExistente(pacienteId);
+    const id = await crear(pacienteId, req.body);
+    await auditar(req, { entidad: ENTIDAD[tabla], entidadId: id, pacienteId, accion: "crear", resumen: resumen(req.body), cambios: req.body });
+    res.status(201).json({ ok: true, data: { id } });
+  });
+
+/** Edita un registro clínico; la traza queda vinculada al paciente dueño de la fila. */
+const editarRegistro = (tabla: TablaClinica, editar: (id: number, d: Record<string, unknown>) => Promise<boolean>, que: string) =>
+  h(async (req, res) => {
+    const fila = await ClinicaModel.fila(tabla, idParam(req));
+    noEncontrado(!!fila, que);
+    await editar(idParam(req), req.body);
+    await auditar(req, { entidad: ENTIDAD[tabla], entidadId: idParam(req), pacienteId: Number(fila!.paciente_id), accion: "editar", resumen: `${que} del ${fila!.fecha}`, cambios: req.body });
+    res.json({ ok: true });
+  });
+
+const borrarRegistro = (tabla: TablaClinica, borrarFn: (id: number) => Promise<boolean>, que: string) =>
+  h(async (req, res) => {
+    const fila = await ClinicaModel.fila(tabla, idParam(req));
+    noEncontrado(!!fila, que);
+    await borrarFn(idParam(req));
+    await auditar(req, { entidad: ENTIDAD[tabla], entidadId: idParam(req), pacienteId: Number(fila!.paciente_id), accion: "borrar", resumen: `${que} del ${fila!.fecha}`, cambios: fila! });
+    res.json({ ok: true });
+  });
+
 export const ClinicaController = {
   catalogoPatologias: h(async (_req, res) => {
     res.json({ ok: true, data: await ClinicaModel.catalogoPatologias() });
@@ -100,14 +133,27 @@ export const ClinicaController = {
   }),
 
   guardarPatologia: h(async (req, res) => {
-    await pacienteExistente(idParam(req));
-    await ClinicaModel.guardarPatologia(idParam(req), idParam(req, "patologiaId"), req.body);
-    res.json({ ok: true, data: await ClinicaModel.patologiasDePaciente(idParam(req)) });
+    const pacienteId = idParam(req);
+    await pacienteExistente(pacienteId);
+    const pat = await ClinicaModel.patologia(idParam(req, "patologiaId"));
+    if (!pat) throw new AppError("Patología no encontrada", 404);
+    await ClinicaModel.guardarPatologia(pacienteId, Number(pat.id), req.body);
+    const descartada = req.body.activa === false;
+    await auditar(req, {
+      entidad: "patologia", entidadId: Number(pat.id), pacienteId, accion: "editar",
+      resumen: `${descartada ? "Descartó" : "Registró"} ${pat.nombre}${req.body.grado ? ` (${req.body.grado})` : ""}`,
+      cambios: req.body,
+    });
+    res.json({ ok: true, data: await ClinicaModel.patologiasDePaciente(pacienteId) });
   }),
 
   quitarPatologia: h(async (req, res) => {
-    await ClinicaModel.quitarPatologiaManual(idParam(req), idParam(req, "patologiaId"));
-    res.json({ ok: true, data: await ClinicaModel.patologiasDePaciente(idParam(req)) });
+    const pacienteId = idParam(req);
+    const pat = await ClinicaModel.patologia(idParam(req, "patologiaId"));
+    if (!pat) throw new AppError("Patología no encontrada", 404);
+    await ClinicaModel.quitarPatologiaManual(pacienteId, Number(pat.id));
+    await auditar(req, { entidad: "patologia", entidadId: Number(pat.id), pacienteId, accion: "borrar", resumen: `Quitó la carga manual de ${pat.nombre} (vuelve al cálculo automático)` });
+    res.json({ ok: true, data: await ClinicaModel.patologiasDePaciente(pacienteId) });
   }),
 
   progreso: h(async (req, res) => {
@@ -115,53 +161,30 @@ export const ClinicaController = {
     res.json({ ok: true, data: await ClinicaModel.progreso(idParam(req)) });
   }),
 
-  crearMedicion: h(async (req, res) => {
+  seguimiento: h(async (req, res) => {
     await pacienteExistente(idParam(req));
-    const id = await ClinicaModel.crearMedicion(idParam(req), req.body);
-    res.status(201).json({ ok: true, data: { id } });
+    res.json({ ok: true, data: await ClinicaModel.seguimiento(idParam(req)) });
   }),
-  actualizarMedicion: h(async (req, res) => {
-    noEncontrado(await ClinicaModel.actualizarMedicion(idParam(req), req.body), "Medición");
-    res.json({ ok: true });
-  }),
-  borrarMedicion: h(async (req, res) => {
-    noEncontrado(await ClinicaModel.borrarMedicion(idParam(req)), "Medición");
-    res.json({ ok: true });
-  }),
+
+  crearMedicion: crearRegistro("mediciones", ClinicaModel.crearMedicion,
+    (d) => `Medición del ${d.fecha}${d.peso_kg ? ` · ${d.peso_kg} kg` : ""}`),
+  actualizarMedicion: editarRegistro("mediciones", ClinicaModel.actualizarMedicion, "Medición"),
+  borrarMedicion: borrarRegistro("mediciones", ClinicaModel.borrarMedicion, "Medición"),
 
   laboratorios: h(async (req, res) => {
     await pacienteExistente(idParam(req));
     res.json({ ok: true, data: await ClinicaModel.laboratorios(idParam(req)) });
   }),
-  crearLaboratorio: h(async (req, res) => {
-    await pacienteExistente(idParam(req));
-    const id = await ClinicaModel.crearLaboratorio(idParam(req), req.body);
-    res.status(201).json({ ok: true, data: { id } });
-  }),
-  actualizarLaboratorio: h(async (req, res) => {
-    noEncontrado(await ClinicaModel.actualizarLaboratorio(idParam(req), req.body), "Laboratorio");
-    res.json({ ok: true });
-  }),
-  borrarLaboratorio: h(async (req, res) => {
-    noEncontrado(await ClinicaModel.borrarLaboratorio(idParam(req)), "Laboratorio");
-    res.json({ ok: true });
-  }),
+  crearLaboratorio: crearRegistro("laboratorios", ClinicaModel.crearLaboratorio,
+    (d) => `Laboratorio del ${d.fecha}${d.glucemia ? ` · glucemia ${d.glucemia}` : ""}`),
+  actualizarLaboratorio: editarRegistro("laboratorios", ClinicaModel.actualizarLaboratorio, "Laboratorio"),
+  borrarLaboratorio: borrarRegistro("laboratorios", ClinicaModel.borrarLaboratorio, "Laboratorio"),
 
   estudios: h(async (req, res) => {
     await pacienteExistente(idParam(req));
     res.json({ ok: true, data: await ClinicaModel.estudios(idParam(req)) });
   }),
-  crearEstudio: h(async (req, res) => {
-    await pacienteExistente(idParam(req));
-    const id = await ClinicaModel.crearEstudio(idParam(req), req.body);
-    res.status(201).json({ ok: true, data: { id } });
-  }),
-  actualizarEstudio: h(async (req, res) => {
-    noEncontrado(await ClinicaModel.actualizarEstudio(idParam(req), req.body), "Estudio");
-    res.json({ ok: true });
-  }),
-  borrarEstudio: h(async (req, res) => {
-    noEncontrado(await ClinicaModel.borrarEstudio(idParam(req)), "Estudio");
-    res.json({ ok: true });
-  }),
+  crearEstudio: crearRegistro("estudios", ClinicaModel.crearEstudio, (d) => `Estudio: ${d.nombre} (${d.fecha})`),
+  actualizarEstudio: editarRegistro("estudios", ClinicaModel.actualizarEstudio, "Estudio"),
+  borrarEstudio: borrarRegistro("estudios", ClinicaModel.borrarEstudio, "Estudio"),
 };

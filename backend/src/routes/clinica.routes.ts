@@ -21,6 +21,7 @@ router.delete("/pacientes/:id/patologias/:patologiaId", authMiddleware, validarI
 
 // Progreso (gráficos)
 router.get("/pacientes/:id/progreso",               authMiddleware, validarId, C.progreso);
+router.get("/pacientes/:id/seguimiento",            authMiddleware, validarId, C.seguimiento);
 
 // Mediciones
 router.post("/pacientes/:id/mediciones",            authMiddleware, validarId, validarMedicion(), C.crearMedicion);

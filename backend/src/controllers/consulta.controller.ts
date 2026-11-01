@@ -3,6 +3,7 @@ import { body, validationResult } from "express-validator";
 import { ConsultaModel } from "../models/consulta.model";
 import { AuthRequest } from "../types";
 import { AppError } from "../middlewares/error.middleware";
+import { auditar } from "../utils/auditoria";
 import { ClinicaModel } from "../models/clinica.model";
 
 export const crearConsultaValidators = [
@@ -56,6 +57,7 @@ export const ConsultaController = {
       const { medicion, ...consultaData } = req.body;
 
       const consultaId = await ConsultaModel.create(consultaData);
+      await auditar(req, { entidad: "consulta", entidadId: consultaId, pacienteId: Number(consultaData.paciente_id), accion: "crear", resumen: `Consulta del ${consultaData.fecha}`, cambios: consultaData });
 
       if (medicion && Object.keys(medicion).length > 0) {
         try {
@@ -86,6 +88,7 @@ export const ConsultaController = {
       if (!consulta) throw new AppError("Consulta no encontrada", 404);
 
       await ConsultaModel.update(id, req.body);
+      await auditar(req, { entidad: "consulta", entidadId: id, pacienteId: Number(consulta.paciente_id), accion: "editar", resumen: `Consulta del ${consulta.fecha}`, cambios: req.body });
       const actualizada = await ConsultaModel.findById(id);
       res.json({ ok: true, data: actualizada, mensaje: "Consulta actualizada correctamente" });
     } catch (error) {
@@ -100,6 +103,7 @@ export const ConsultaController = {
       if (!consulta) throw new AppError("Consulta no encontrada", 404);
 
       await ConsultaModel.delete(id);
+      await auditar(req, { entidad: "consulta", entidadId: id, pacienteId: Number(consulta.paciente_id), accion: "borrar", resumen: `Eliminó la consulta del ${consulta.fecha}` });
       res.json({ ok: true, mensaje: "Consulta eliminada correctamente" });
     } catch (error) {
       next(error);
