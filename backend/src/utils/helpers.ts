@@ -45,3 +45,7 @@ export function calcularEdad(fechaNacimiento: Date | string): number {
   if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
   return edad;
 }
+/** Fecha de hoy (AAAA-MM-DD) en la zona horaria de Argentina, no en UTC. */
+export function hoyArgentina(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(new Date());
+}

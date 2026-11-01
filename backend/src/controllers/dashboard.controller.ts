@@ -1,3 +1,4 @@
+import { hoyArgentina } from "../utils/helpers";
 import { Response, NextFunction } from "express";
 import { AuthRequest } from "../types";
 import pool from "../config/database";
@@ -7,7 +8,7 @@ export const DashboardController = {
 
   async stats(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const hoy = new Date().toISOString().slice(0, 10);
+      const hoy = hoyArgentina();
       const primerDiaMes = hoy.slice(0, 7) + "-01";
 
       const [[{ pacientes_activos }]] = await pool.query<(RowDataPacket & { pacientes_activos: number })[]>(

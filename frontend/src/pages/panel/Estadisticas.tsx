@@ -1,3 +1,4 @@
+import { fechaISO } from "@/utils/fecha";
 import { useState, useEffect, useCallback } from "react";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -9,12 +10,12 @@ import toast from "react-hot-toast";
 
 // ── Helpers de fecha ──────────────────────────────────────────────
 function hoy() {
-  return new Date().toISOString().slice(0, 10);
+  return fechaISO();
 }
 function hace(meses: number) {
   const d = new Date();
   d.setMonth(d.getMonth() - meses);
-  return d.toISOString().slice(0, 10);
+  return fechaISO(d);
 }
 function labelMes(mes: string) {
   const [y, m] = mes.split("-");

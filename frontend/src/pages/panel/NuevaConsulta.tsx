@@ -1,3 +1,4 @@
+import { fechaISO } from "@/utils/fecha";
 import { useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Save, ClipboardList, Activity, Scale } from "lucide-react";
@@ -60,7 +61,7 @@ export default function NuevaConsulta() {
   const [guardando, setGuardando] = useState(false);
 
   const [consulta, setConsulta] = useState({
-    fecha:           new Date().toISOString().split("T")[0],
+    fecha:           fechaISO(),
     sede_id:         "1",
     tipo_consulta:   "control",
     motivo_consulta: "",
