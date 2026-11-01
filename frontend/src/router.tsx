@@ -13,15 +13,12 @@ import HistoriaClinica from "./pages/panel/HistoriaClinica";
 import Anamnesis from "./pages/panel/Anamnesis";
 import Planes from "./pages/panel/Planes";
 import Consultas from "./pages/panel/Consultas";
-import Blog from "./pages/panel/Blog";
 import Configuracion from "./pages/panel/Configuracion";
 import Estadisticas from "./pages/panel/Estadisticas";
 import DetalleConsulta from "./pages/panel/DetallesConsulta";
-// Sitio público
-import PublicLayout from "./components/layout/PublicLayout";
-import Inicio from "./pages/publico/Inicio";
-import BlogPublico from "./pages/publico/BlogPublico";
-import PostPublico from "./pages/publico/PostPublico";
+import Patologias from "./pages/panel/Patologias";
+// El sitio público (Inicio, blog) y el blog del panel quedan fuera de esta versión:
+// su código (pages/publico, pages/panel/Blog) y sus tablas se conservan para poder reactivarlos.
 
 function RutaPrivada({ children }: { children: React.ReactNode }) {
   const estaAutenticado = useAuthStore((s) => s.estaAutenticado);
@@ -37,51 +34,31 @@ export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Raíz: al panel (o al login si no hay sesión) */}
+        <Route path="/" element={<Navigate to="/panel" replace />} />
 
-        {/* ── Sitio público ─────────────────────────────── */}
-        <Route element={<PublicLayout />}>
-          <Route path="/"           element={<Inicio />} />
-          <Route path="/blog"       element={<BlogPublico />} />
-          <Route path="/blog/:slug" element={<PostPublico />} />
+        <Route path="/login" element={<RutaPublicaSolo><Login /></RutaPublicaSolo>} />
+
+        <Route path="/panel" element={<RutaPrivada><PanelLayout /></RutaPrivada>}>
+          <Route index                                       element={<Dashboard />} />
+          <Route path="pacientes"                            element={<Pacientes />} />
+          <Route path="pacientes/nuevo"                      element={<NuevoPaciente />} />
+          <Route path="pacientes/:id"                        element={<DetallePaciente />} />
+          <Route path="pacientes/:id/editar"                 element={<EditarPaciente />} />
+          <Route path="pacientes/:id/historia-clinica"       element={<HistoriaClinica />} />
+          <Route path="pacientes/:id/anamnesis"              element={<Anamnesis />} />
+          <Route path="pacientes/:pacienteId/consulta/nueva" element={<NuevaConsulta />} />
+          <Route path="patologias"                           element={<Patologias />} />
+          <Route path="patologias/:codigo"                   element={<Patologias />} />
+          <Route path="turnos"                               element={<Turnos />} />
+          <Route path="consultas"                            element={<Consultas />} />
+          <Route path="consultas/:id"                        element={<DetalleConsulta />} />
+          <Route path="planes"                               element={<Planes />} />
+          <Route path="configuracion"                        element={<Configuracion />} />
+          <Route path="estadisticas"                         element={<Estadisticas />} />
         </Route>
 
-        {/* ── Login ─────────────────────────────────────── */}
-        <Route
-          path="/login"
-          element={
-            <RutaPublicaSolo>
-              <Login />
-            </RutaPublicaSolo>
-          }
-        />
-
-        {/* ── Panel privado ─────────────────────────────── */}
-        <Route
-          path="/panel"
-          element={
-            <RutaPrivada>
-              <PanelLayout />
-            </RutaPrivada>
-          }
-        >
-          <Route index                                          element={<Dashboard />} />
-          <Route path="pacientes"                               element={<Pacientes />} />
-          <Route path="pacientes/nuevo"                         element={<NuevoPaciente />} />
-          <Route path="pacientes/:id"                           element={<DetallePaciente />} />
-          <Route path="pacientes/:id/editar"                    element={<EditarPaciente />} />
-          <Route path="pacientes/:id/historia-clinica"          element={<HistoriaClinica />} />
-          <Route path="pacientes/:id/anamnesis"                 element={<Anamnesis />} />
-          <Route path="pacientes/:pacienteId/consulta/nueva"    element={<NuevaConsulta />} />
-          <Route path="turnos"                                  element={<Turnos />} />
-          <Route path="consultas"                               element={<Consultas />} />
-          <Route path="planes"                                  element={<Planes />} />
-          <Route path="blog"                                    element={<Blog />} />
-          <Route path="configuracion" element={<Configuracion />} />
-          <Route path="estadisticas" element={<Estadisticas />} />
-          <Route path="consultas/:id" element={<DetalleConsulta />} />
-        </Route>
-
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/panel" replace />} />
       </Routes>
     </BrowserRouter>
   );

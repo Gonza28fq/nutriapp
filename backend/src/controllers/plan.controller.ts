@@ -3,6 +3,7 @@ import { body, validationResult } from "express-validator";
 import { PlanModel } from "../models/plan.model";
 import { AuthRequest } from "../types";
 import { AppError } from "../middlewares/error.middleware";
+import { auditar } from "../utils/auditoria";
 
 export const crearPlanValidators = [
   body("paciente_id").notEmpty().isInt().withMessage("paciente_id es requerido"),
@@ -49,6 +50,7 @@ export const PlanController = {
       }
 
       const id = await PlanModel.create(req.body);
+      await auditar(req, { entidad: "plan", entidadId: id, pacienteId: Number(req.body.paciente_id), accion: "crear", resumen: `Plan: ${req.body.nombre ?? "Plan alimentario"}`, cambios: req.body });
       const plan = await PlanModel.findById(id);
       const comidas = await PlanModel.getComidas(id);
       res.status(201).json({ ok: true, data: { ...plan, comidas }, mensaje: "Plan creado correctamente" });
@@ -64,6 +66,7 @@ export const PlanController = {
       if (!plan) throw new AppError("Plan no encontrado", 404);
 
       await PlanModel.update(id, req.body);
+      await auditar(req, { entidad: "plan", entidadId: id, pacienteId: Number(plan.paciente_id), accion: "editar", resumen: `Plan: ${plan.nombre ?? "Plan alimentario"}`, cambios: req.body });
       const actualizado = await PlanModel.findById(id);
       res.json({ ok: true, data: actualizado, mensaje: "Plan actualizado correctamente" });
     } catch (error) {
@@ -78,6 +81,7 @@ export const PlanController = {
       if (!plan) throw new AppError("Plan no encontrado", 404);
 
       await PlanModel.delete(id);
+      await auditar(req, { entidad: "plan", entidadId: id, pacienteId: Number(plan.paciente_id), accion: "borrar", resumen: `Eliminó el plan ${plan.nombre ?? ""}`.trim() });
       res.json({ ok: true, mensaje: "Plan eliminado correctamente" });
     } catch (error) {
       next(error);

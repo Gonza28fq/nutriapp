@@ -1,13 +1,14 @@
+import { hoyArgentina } from "../utils/helpers";
 import { Response, NextFunction } from "express";
 import { AuthRequest } from "../types";
 import pool from "../config/database";
-import { RowDataPacket } from "mysql2";
+import { RowDataPacket } from "../config/db-types";
 
 export const DashboardController = {
 
   async stats(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const hoy = new Date().toISOString().slice(0, 10);
+      const hoy = hoyArgentina();
       const primerDiaMes = hoy.slice(0, 7) + "-01";
 
       const [[{ pacientes_activos }]] = await pool.query<(RowDataPacket & { pacientes_activos: number })[]>(
@@ -44,14 +45,14 @@ export const DashboardController = {
       }
 
       const [pacientesPorMes] = await pool.query<RowDataPacket[]>(
-        `SELECT DATE_FORMAT(creado_en, '%Y-%m') as mes, COUNT(*) as total
+        `SELECT to_char(creado_en, 'YYYY-MM') as mes, COUNT(*) as total
          FROM pacientes WHERE creado_en BETWEEN ? AND ?
          GROUP BY mes ORDER BY mes ASC`,
         [desde + " 00:00:00", hasta + " 23:59:59"]
       );
 
       const [consultasPorMes] = await pool.query<RowDataPacket[]>(
-        `SELECT DATE_FORMAT(fecha, '%Y-%m') as mes, COUNT(*) as total
+        `SELECT to_char(fecha, 'YYYY-MM') as mes, COUNT(*) as total
          FROM consultas WHERE fecha BETWEEN ? AND ?
          GROUP BY mes ORDER BY mes ASC`,
         [desde, hasta]
@@ -79,17 +80,35 @@ export const DashboardController = {
       const [pacientesPorEdad] = await pool.query<RowDataPacket[]>(
         `SELECT
            CASE
-             WHEN TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) < 18 THEN 'Menor 18'
-             WHEN TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) BETWEEN 18 AND 30 THEN '18-30'
-             WHEN TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) BETWEEN 31 AND 45 THEN '31-45'
-             WHEN TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) BETWEEN 46 AND 60 THEN '46-60'
-             WHEN TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) > 60 THEN 'Mayor 60'
+             WHEN date_part('year', age(fecha_nacimiento)) < 18 THEN 'Menor 18'
+             WHEN date_part('year', age(fecha_nacimiento)) BETWEEN 18 AND 30 THEN '18-30'
+             WHEN date_part('year', age(fecha_nacimiento)) BETWEEN 31 AND 45 THEN '31-45'
+             WHEN date_part('year', age(fecha_nacimiento)) BETWEEN 46 AND 60 THEN '46-60'
+             WHEN date_part('year', age(fecha_nacimiento)) > 60 THEN 'Mayor 60'
              ELSE 'Sin datos'
            END as rango,
            COUNT(*) as total
          FROM pacientes WHERE activo = TRUE
          GROUP BY rango
-         ORDER BY MIN(TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()))`
+         ORDER BY MIN(date_part('year', age(fecha_nacimiento)))`
+      );
+
+      // IMC actual (última medición con IMC) de cada paciente activo — solo el número, anónimo
+      const [imcActual] = await pool.query<RowDataPacket[]>(
+        `SELECT round(u.imc::numeric, 1)::float AS imc FROM (
+           SELECT DISTINCT ON (m.paciente_id) m.paciente_id, m.imc FROM mediciones m
+           JOIN pacientes p ON p.id = m.paciente_id AND p.activo
+           WHERE m.imc IS NOT NULL ORDER BY m.paciente_id, m.fecha DESC, m.id DESC) u
+         ORDER BY u.imc`
+      );
+      // Cambio de peso (última − primera medición) de cada paciente activo con 2 o más pesos
+      const [cambiosPeso] = await pool.query<RowDataPacket[]>(
+        `SELECT round((ult.peso_kg - pri.peso_kg)::numeric, 1)::float AS cambio, (ult.fecha - pri.fecha) AS dias
+         FROM pacientes p
+         JOIN LATERAL (SELECT peso_kg, fecha FROM mediciones WHERE paciente_id = p.id AND peso_kg IS NOT NULL ORDER BY fecha, id LIMIT 1) pri ON true
+         JOIN LATERAL (SELECT peso_kg, fecha FROM mediciones WHERE paciente_id = p.id AND peso_kg IS NOT NULL ORDER BY fecha DESC, id DESC LIMIT 1) ult ON true
+         WHERE p.activo AND (SELECT count(*) FROM mediciones WHERE paciente_id = p.id AND peso_kg IS NOT NULL) >= 2
+         ORDER BY cambio`
       );
 
       const [planesPorEstado] = await pool.query<RowDataPacket[]>(
@@ -111,6 +130,8 @@ export const DashboardController = {
           pacientesPorSexo,
           pacientesPorEdad,
           planesPorEstado,
+          imcActual: (imcActual as RowDataPacket[]).map((r) => r.imc),
+          cambiosPeso: (cambiosPeso as RowDataPacket[]).map((r) => ({ cambio: r.cambio, dias: r.dias })),
           totales: {
             pacientes:  (totPacientes as any).total,
             consultas:  (totConsultas as any).total,

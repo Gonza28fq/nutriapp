@@ -1,5 +1,5 @@
 import pool from "../config/database";
-import { RowDataPacket, ResultSetHeader } from "mysql2";
+import { RowDataPacket, ResultSetHeader } from "../config/db-types";
 
 export interface SeccionRow extends RowDataPacket {
   id: number; clave: string; valor: string;
@@ -24,8 +24,8 @@ export const SitioModel = {
 
   async upsertSeccion(clave: string, valor: string): Promise<void> {
     await pool.query(
-      "INSERT INTO sitio_secciones (clave, valor) VALUES (?,?) ON DUPLICATE KEY UPDATE valor=?, actualizado_en=NOW()",
-      [clave, valor, valor]
+      "INSERT INTO sitio_secciones (clave, valor) VALUES (?,?) ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor",
+      [clave, valor]
     );
   },
 

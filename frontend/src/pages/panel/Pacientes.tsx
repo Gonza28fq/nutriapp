@@ -5,11 +5,14 @@ import { pacienteService } from "@/services/paciente.service";
 import { Paciente } from "@/types";
 import { exportarPacientesExcel } from "@/services/export.service";
 import toast from "react-hot-toast";
+import { clinicaService, type Patologia } from "@/services/clinica.service";
 
 type FiltroActivo = "activos" | "bajas";
 
 export default function Pacientes() {
   const navigate = useNavigate();
+  const [patologias, setPatologias] = useState<Patologia[]>([]);
+  useEffect(() => { clinicaService.patologias().then((l) => setPatologias(l.filter((p) => p.pacientes > 0))).catch(() => {}); }, []);
   const [pacientes, setPacientes]       = useState<Paciente[]>([]);
   const [busqueda, setBusqueda]         = useState("");
   const [cargando, setCargando]         = useState(true);
@@ -108,6 +111,19 @@ export default function Pacientes() {
           Dados de baja
         </button>
       </div>
+
+      {/* Atajo: pacientes por patología */}
+      {filtro === "activos" && patologias.length > 0 && (
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+          <span className="text-xs font-bold uppercase tracking-wider flex-shrink-0" style={{ color: "var(--color-text-muted)" }}>Por patología</span>
+          {patologias.map((p) => (
+            <button key={p.codigo} className="chip" onClick={() => navigate(`/panel/patologias/${p.codigo}`)}>
+              <span className="w-2 h-2 rounded-full" style={{ background: p.color || "var(--color-primary)" }} />
+              {p.sigla || p.nombre} · {p.pacientes}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Buscador */}
       <div className="panel-card p-4">

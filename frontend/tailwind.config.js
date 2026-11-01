@@ -53,8 +53,8 @@ export default {
         },
       },
       fontFamily: {
-        display: ["Playfair Display", "Georgia", "serif"],
-        body:    ["DM Sans", "system-ui", "sans-serif"],
+        display: ["Fraunces", "Georgia", "serif"],
+        body:    ["Nunito", "system-ui", "sans-serif"],
         mono:    ["JetBrains Mono", "monospace"],
       },
       borderRadius: {

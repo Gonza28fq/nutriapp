@@ -3,6 +3,7 @@ import { body, validationResult } from "express-validator";
 import { PacienteModel } from "../models/paciente.model";
 import { AuthRequest } from "../types";
 import { AppError } from "../middlewares/error.middleware";
+import { auditar } from "../utils/auditoria";
 
 export const crearPacienteValidators = [
   body("nombre").notEmpty().withMessage("El nombre es requerido").trim(),
@@ -62,6 +63,7 @@ export const PacienteController = {
       }
 
       const id = await PacienteModel.create(req.body);
+      await auditar(req, { entidad: "paciente", entidadId: id, pacienteId: id, accion: "crear", resumen: `Alta de paciente: ${req.body.nombre + " " + req.body.apellido}`, cambios: req.body });
       const paciente = await PacienteModel.findById(id);
       res.status(201).json({ ok: true, data: paciente, mensaje: "Paciente creado correctamente" });
     } catch (error) {
@@ -82,6 +84,7 @@ export const PacienteController = {
       if (!paciente) throw new AppError("Paciente no encontrado", 404);
 
       await PacienteModel.update(id, req.body);
+      await auditar(req, { entidad: "paciente", entidadId: id, pacienteId: id, accion: "editar", resumen: "Editó los datos personales", cambios: req.body });
       const actualizado = await PacienteModel.findById(id);
       res.json({ ok: true, data: actualizado, mensaje: "Paciente actualizado correctamente" });
     } catch (error) {
@@ -96,6 +99,7 @@ export const PacienteController = {
       if (!paciente) throw new AppError("Paciente no encontrado", 404);
 
       await PacienteModel.desactivar(id);
+      await auditar(req, { entidad: "paciente", entidadId: id, pacienteId: id, accion: "baja", resumen: "Dio de baja al paciente" });
       res.json({ ok: true, mensaje: "Paciente dado de baja correctamente" });
     } catch (error) {
       next(error);
@@ -109,6 +113,7 @@ export const PacienteController = {
       if (!paciente) throw new AppError("Paciente no encontrado", 404);
 
       await PacienteModel.reactivar(id);
+      await auditar(req, { entidad: "paciente", entidadId: id, pacienteId: id, accion: "reactivar", resumen: "Reactivó al paciente" });
       res.json({ ok: true, mensaje: "Paciente reactivado correctamente" });
     } catch (error) {
       next(error);
@@ -122,6 +127,7 @@ export const PacienteController = {
       if (!paciente) throw new AppError("Paciente no encontrado", 404);
 
       await PacienteModel.upsertHistoriaClinica(id, req.body);
+      await auditar(req, { entidad: "historia_clinica", pacienteId: id, accion: "editar", resumen: "Actualizó la historia clínica", cambios: req.body });
       const historia = await PacienteModel.getHistoriaClinica(id);
       res.json({ ok: true, data: historia, mensaje: "Historia clinica actualizada" });
     } catch (error) {
@@ -136,6 +142,7 @@ export const PacienteController = {
       if (!paciente) throw new AppError("Paciente no encontrado", 404);
 
       await PacienteModel.upsertAnamnesis(id, req.body);
+      await auditar(req, { entidad: "anamnesis", pacienteId: id, accion: "editar", resumen: "Actualizó la anamnesis alimentaria", cambios: req.body });
       const anamnesis = await PacienteModel.getAnamnesis(id);
       res.json({ ok: true, data: anamnesis, mensaje: "Anamnesis actualizada" });
     } catch (error) {

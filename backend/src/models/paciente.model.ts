@@ -1,5 +1,5 @@
 import pool from "../config/database";
-import { RowDataPacket, ResultSetHeader } from "mysql2";
+import { RowDataPacket, ResultSetHeader } from "../config/db-types";
 
 export interface PacienteRow extends RowDataPacket {
   id: number;
@@ -22,34 +22,61 @@ export interface PacienteRow extends RowDataPacket {
   actualizado_en: string;
 }
 
+// Columnas reales de cada tabla (se leen una vez). Solo se aceptan claves que
+// existan en la tabla: así un campo inventado en el body no llega al SQL.
+const columnasCache = new Map<string, Set<string>>();
+async function columnasDe(tabla: string): Promise<Set<string>> {
+  if (!columnasCache.has(tabla)) {
+    const [rows] = await pool.query<{ column_name: string }[]>(
+      "SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ?",
+      [tabla]
+    );
+    columnasCache.set(tabla, new Set(rows.map((r) => r.column_name)));
+  }
+  return columnasCache.get(tabla)!;
+}
+
+/** Inserta o actualiza la fila 1:1 de un paciente (historia clínica, anamnesis). */
+async function upsertPorPaciente(tabla: "historia_clinica" | "anamnesis_alimentaria", pacienteId: number, data: Record<string, unknown>) {
+  const validas = await columnasDe(tabla);
+  const campos = Object.keys(data).filter((k) => validas.has(k) && k !== "id" && k !== "paciente_id");
+  const valores = campos.map((k) => data[k]);
+  const cols = ["paciente_id", ...campos].map((c) => `"${c}"`).join(", ");
+  const marcas = ["?", ...campos.map(() => "?")].join(", ");
+  const update = campos.length
+    ? `DO UPDATE SET ${campos.map((c) => `"${c}" = EXCLUDED."${c}"`).join(", ")}`
+    : "DO NOTHING";
+  await pool.query(
+    `INSERT INTO ${tabla} (${cols}) VALUES (${marcas}) ON CONFLICT (paciente_id) ${update}`,
+    [pacienteId, ...valores]
+  );
+}
+
 export const PacienteModel = {
 
   async findAll(busqueda?: string, pagina = 1, limite = 20, soloActivos = true) {
     const offset = (pagina - 1) * limite;
-    const filtroActivo = soloActivos ? "activo = TRUE" : "activo = FALSE";
-
-    let query = `SELECT id, nombre, apellido, dni, edad, sexo, celular, localidad, activo, prioridad, creado_en FROM pacientes`;
+    const where: string[] = [soloActivos ? "activo = TRUE" : "activo = FALSE"];
     const params: unknown[] = [];
 
-    if (busqueda && busqueda.trim() !== "") {
-      query += ` WHERE ${filtroActivo} AND MATCH(nombre, apellido, dni, celular) AGAINST (? IN BOOLEAN MODE)`;
-      params.push(`${busqueda}*`);
-    } else {
-      query += ` WHERE ${filtroActivo}`;
+    // Cada palabra tiene que aparecer en nombre, apellido, DNI o celular
+    // (sin distinguir mayúsculas ni tildes: "maria gonz" encuentra a "María González").
+    const palabras = (busqueda ?? "").trim().split(/\s+/).filter(Boolean).slice(0, 5);
+    for (const p of palabras) {
+      where.push(`unaccent(concat_ws(' ', nombre, apellido, dni, celular)) ILIKE unaccent(?)`);
+      params.push(`%${p.replace(/[%_\\]/g, "\\$&")}%`);
     }
+    const filtro = `WHERE ${where.join(" AND ")}`;
 
-    query += " ORDER BY apellido ASC, nombre ASC LIMIT ? OFFSET ?";
-    params.push(limite, offset);
+    const [rows] = await pool.query<PacienteRow[]>(
+      `SELECT id, nombre, apellido, dni, edad, sexo, celular, localidad, activo, prioridad, creado_en
+       FROM pacientes ${filtro}
+       ORDER BY apellido ASC, nombre ASC LIMIT ? OFFSET ?`,
+      [...params, limite, offset]
+    );
 
-    const [rows] = await pool.query<PacienteRow[]>(query, params);
-
-    const countQuery = busqueda && busqueda.trim() !== ""
-      ? `SELECT COUNT(*) as total FROM pacientes WHERE ${filtroActivo} AND MATCH(nombre, apellido, dni, celular) AGAINST (? IN BOOLEAN MODE)`
-      : `SELECT COUNT(*) as total FROM pacientes WHERE ${filtroActivo}`;
-
-    const [[{ total }]] = await pool.query<(RowDataPacket & { total: number })[]>(
-      countQuery,
-      busqueda && busqueda.trim() !== "" ? [`${busqueda}*`] : []
+    const [[{ total }]] = await pool.query<{ total: number }[]>(
+      `SELECT COUNT(*) AS total FROM pacientes ${filtro}`, params
     );
 
     return { items: rows, total, pagina, limite, totalPaginas: Math.ceil(total / limite) };
@@ -122,15 +149,7 @@ export const PacienteModel = {
   },
 
   async upsertHistoriaClinica(pacienteId: number, data: Record<string, unknown>): Promise<void> {
-    const existing = await this.getHistoriaClinica(pacienteId);
-    if (existing) {
-      const campos = Object.keys(data).map(k => `${k} = ?`).join(", ");
-      await pool.query(`UPDATE historia_clinica SET ${campos} WHERE paciente_id = ?`, [...Object.values(data), pacienteId]);
-    } else {
-      const campos = ["paciente_id", ...Object.keys(data)].join(", ");
-      const valores = "?, ".repeat(Object.keys(data).length + 1).slice(0, -2);
-      await pool.query(`INSERT INTO historia_clinica (${campos}) VALUES (${valores})`, [pacienteId, ...Object.values(data)]);
-    }
+    await upsertPorPaciente("historia_clinica", pacienteId, data);
   },
 
   async getAnamnesis(pacienteId: number) {
@@ -141,14 +160,6 @@ export const PacienteModel = {
   },
 
   async upsertAnamnesis(pacienteId: number, data: Record<string, unknown>): Promise<void> {
-    const existing = await this.getAnamnesis(pacienteId);
-    if (existing) {
-      const campos = Object.keys(data).map(k => `${k} = ?`).join(", ");
-      await pool.query(`UPDATE anamnesis_alimentaria SET ${campos} WHERE paciente_id = ?`, [...Object.values(data), pacienteId]);
-    } else {
-      const campos = ["paciente_id", ...Object.keys(data)].join(", ");
-      const valores = "?, ".repeat(Object.keys(data).length + 1).slice(0, -2);
-      await pool.query(`INSERT INTO anamnesis_alimentaria (${campos}) VALUES (${valores})`, [pacienteId, ...Object.values(data)]);
-    }
+    await upsertPorPaciente("anamnesis_alimentaria", pacienteId, data);
   },
 };
