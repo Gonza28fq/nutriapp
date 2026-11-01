@@ -385,3 +385,18 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
 }
+
+/* ── Fondo animado: figuritas que suben balanceándose ── */
+.fondo-sube { will-change: transform; animation-name: sube; animation-timing-function: linear; animation-iteration-count: infinite; }
+.fondo-vaiven { will-change: transform; animation-name: vaiven; animation-timing-function: ease-in-out; animation-iteration-count: infinite; animation-direction: alternate; }
+@keyframes sube {
+  0%   { transform: translateY(12vh) rotate(0deg); opacity: 0; }
+  8%   { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(-112vh) rotate(160deg); opacity: 0; }
+}
+@keyframes vaiven { from { transform: translateX(-14px) rotate(-8deg); } to { transform: translateX(14px) rotate(8deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .fondo-sube { animation: none !important; transform: translateY(var(--reposo, -40vh)); }
+  .fondo-vaiven { animation: none !important; }
+}

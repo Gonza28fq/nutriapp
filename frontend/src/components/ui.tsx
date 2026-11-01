@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import type { PatologiaPaciente } from "@/services/clinica.service";
 
@@ -57,8 +58,19 @@ export function PatologiaChip({ nombre, sigla, color, grado, onClick }: { nombre
 }
 
 export function Modal({ titulo, onCerrar, children, ancho = "max-w-lg" }: { titulo: string; onCerrar: () => void; children: ReactNode; ancho?: string }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4" onClick={onCerrar}
+  // Bloquea el scroll del fondo y cierra con Escape
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && onCerrar();
+    window.addEventListener("keydown", esc);
+    return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", esc); };
+  }, [onCerrar]);
+
+  // Portal al <body>: si el modal quedara dentro de un contenedor animado (transform),
+  // "fixed" se ubicaría relativo a ese contenedor y la navegación le quedaría encima.
+  return createPortal(
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4" onClick={onCerrar}
       style={{ background: "rgba(59, 21, 48, 0.35)", backdropFilter: "blur(4px)" }}>
       <div className={`w-full ${ancho} bg-white rounded-t-[2rem] sm:rounded-[2rem] max-h-[92vh] overflow-y-auto animate-pop safe-bottom`}
         onClick={(e) => e.stopPropagation()} style={{ boxShadow: "var(--shadow-float)" }}>
@@ -72,7 +84,7 @@ export function Modal({ titulo, onCerrar, children, ancho = "max-w-lg" }: { titu
         <div className="px-5 sm:px-6 pb-6">{children}</div>
       </div>
     </div>
-  );
+  , document.body);
 }
 
 /** Tarjeta de indicador (número grande + etiqueta) con un tono pastel. */

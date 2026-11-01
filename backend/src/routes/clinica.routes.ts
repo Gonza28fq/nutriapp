@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { param } from "express-validator";
 import {
-  ClinicaController as C, validarMedicion, validarLaboratorio, validarEstudio, validarPatologia,
+  ClinicaController as C, validarMedicion, validarLaboratorio, validarEstudio, validarPatologia, validarCatalogo,
 } from "../controllers/clinica.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 import { validarId, validar } from "../middlewares/validation.middleware";
@@ -14,6 +14,8 @@ const validarCodigo = [param("codigo").matches(/^[a-z0-9_]{2,30}$/).withMessage(
 
 // Patologías
 router.get("/patologias",                           authMiddleware, C.catalogoPatologias);
+router.post("/patologias",                          authMiddleware, validarCatalogo(), C.crearPatologiaCatalogo);
+router.put("/patologias/:id",                       authMiddleware, validarId, validarCatalogo(true), C.actualizarPatologiaCatalogo);
 router.get("/patologias/:codigo/pacientes",         authMiddleware, validarCodigo, C.pacientesPorPatologia);
 router.get("/pacientes/:id/patologias",             authMiddleware, validarId, C.patologiasDePaciente);
 router.put("/pacientes/:id/patologias/:patologiaId",    authMiddleware, validarId, validarPatologia, C.guardarPatologia);

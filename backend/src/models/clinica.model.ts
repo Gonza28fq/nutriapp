@@ -4,7 +4,7 @@
  * campos declarados acá, nunca claves arbitrarias del body.
  */
 import pool from "../config/database";
-import { calcularIMC } from "../utils/helpers";
+import { calcularIMC, generarSlug } from "../utils/helpers";
 
 type Datos = Record<string, unknown>;
 
@@ -83,6 +83,38 @@ export const ClinicaModel = {
   async fila(tabla: TablaClinica, id: number): Promise<Datos | null> {
     const [[row]] = await pool.query<Datos[]>(`SELECT * FROM ${tabla} WHERE id = ?`, [id]);
     return row ?? null;
+  },
+
+  /** Alta de una patología nueva en el catálogo. El código sale del nombre (y se desambigua si ya existe). */
+  async crearPatologia(data: { nombre: string; sigla?: string | null; categoria?: string; color?: string | null }) {
+    // Mismo nombre ignorando mayúsculas y tildes → no se duplica
+    const [[repetida]] = await pool.query<Datos[]>(
+      "SELECT id, nombre FROM patologias WHERE lower(unaccent(nombre)) = lower(unaccent(?))", [data.nombre.trim()]
+    );
+    if (repetida) return { repetida: repetida as { id: number; nombre: string } };
+    const base = generarSlug(data.nombre).replace(/-/g, "_").slice(0, 26) || "patologia";
+    let codigo = base;
+    for (let i = 2; ; i++) {
+      const [[existe]] = await pool.query<Datos[]>("SELECT 1 FROM patologias WHERE codigo = ?", [codigo]);
+      if (!existe) break;
+      codigo = `${base}_${i}`;
+    }
+    const [[{ orden }]] = await pool.query<{ orden: number }[]>("SELECT coalesce(max(orden), 0) + 10 AS orden FROM patologias");
+    const [r] = await pool.query<{ insertId: number }>(
+      "INSERT INTO patologias (codigo, nombre, sigla, categoria, color, orden) VALUES (?, ?, ?, ?, ?, ?)",
+      [codigo, data.nombre.trim(), data.sigla?.trim() || null, data.categoria || "otra", data.color || null, orden]
+    );
+    return { id: r.insertId, codigo };
+  },
+
+  async actualizarPatologia(id: number, data: Datos) {
+    const pares = (["nombre", "sigla", "categoria", "color", "activa"] as const).filter((c) => data[c] !== undefined);
+    if (!pares.length) return true;
+    const [r] = await pool.query<{ affectedRows: number }>(
+      `UPDATE patologias SET ${pares.map((c) => `${c} = ?`).join(", ")} WHERE id = ?`,
+      [...pares.map((c) => (data[c] === "" ? null : data[c])), id]
+    );
+    return r.affectedRows > 0;
   },
 
   async patologia(id: number) {

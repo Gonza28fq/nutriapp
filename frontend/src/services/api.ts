@@ -25,6 +25,7 @@ api.interceptors.response.use(
         // Limpiar sesión
         localStorage.removeItem("token");
         localStorage.removeItem("usuario");
+        localStorage.removeItem("nutri-auth"); // sesión persistida del store: si queda, el login redirige al panel y se arma un bucle
 
         // Mostrar mensaje según si fue expiración o acceso denegado
         const mensaje = error.response?.data?.mensaje ?? "";

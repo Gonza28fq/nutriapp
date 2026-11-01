@@ -65,6 +65,17 @@ export const validarEstudio = (opcional = false) => [
   validar,
 ];
 
+const CATEGORIAS = ["peso", "metabolica", "cardiovascular", "digestiva", "endocrina", "otra"];
+export const validarCatalogo = (opcional = false) => [
+  (opcional ? body("nombre").optional() : body("nombre")).trim().notEmpty().withMessage("El nombre es requerido")
+    .isLength({ max: 80 }).withMessage("Nombre demasiado largo"),
+  body("sigla").optional({ values: "falsy" }).trim().isLength({ max: 12 }).withMessage("Sigla demasiado larga (máx. 12)"),
+  body("categoria").optional().isIn(CATEGORIAS).withMessage("Categoría inválida"),
+  body("color").optional({ values: "falsy" }).matches(/^#[0-9a-fA-F]{6}$/).withMessage("Color inválido"),
+  body("activa").optional().isBoolean(),
+  validar,
+];
+
 export const validarPatologia = [
   param("patologiaId").isInt({ min: 1 }).withMessage("Patología inválida"),
   body("fecha_diagnostico").optional({ values: "falsy" }).isISO8601({ strict: true }).withMessage("Fecha inválida"),
@@ -121,6 +132,21 @@ const borrarRegistro = (tabla: TablaClinica, borrarFn: (id: number) => Promise<b
 export const ClinicaController = {
   catalogoPatologias: h(async (_req, res) => {
     res.json({ ok: true, data: await ClinicaModel.catalogoPatologias() });
+  }),
+
+  crearPatologiaCatalogo: h(async (req, res) => {
+    const nueva = await ClinicaModel.crearPatologia(req.body);
+    if ("repetida" in nueva) throw new AppError(`Ya existe la patología "${nueva.repetida!.nombre}"`, 409);
+    await auditar(req, { entidad: "patologia", entidadId: nueva.id, accion: "crear", resumen: `Agregó al catálogo: ${req.body.nombre}`, cambios: req.body });
+    res.status(201).json({ ok: true, data: nueva });
+  }),
+
+  actualizarPatologiaCatalogo: h(async (req, res) => {
+    const id = idParam(req);
+    noEncontrado(await ClinicaModel.actualizarPatologia(id, req.body), "Patología");
+    const accion = req.body.activa === false ? "baja" : req.body.activa === true ? "reactivar" : "editar";
+    await auditar(req, { entidad: "patologia", entidadId: id, accion, resumen: "Modificó el catálogo de patologías", cambios: req.body });
+    res.json({ ok: true });
   }),
 
   pacientesPorPatologia: h(async (req, res) => {

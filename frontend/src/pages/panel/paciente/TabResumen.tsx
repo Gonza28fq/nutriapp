@@ -6,6 +6,7 @@ import {
   type Patologia, type PatologiaPaciente, type Medicion, type Laboratorio,
 } from "@/services/clinica.service";
 import { Modal, Campo, PatologiaChip, OrigenBadge, Vacio } from "@/components/ui";
+import ModalNuevaPatologia from "@/components/ModalNuevaPatologia";
 import { fechaCorta } from "@/utils/fecha";
 import type { PacienteFicha } from "./tipos";
 
@@ -19,10 +20,11 @@ function Dato({ label, valor }: { label: string; valor?: string | number | null 
   );
 }
 
-function ModalPatologia({ pacienteId, catalogo, onCerrar, onGuardado }: {
-  pacienteId: number; catalogo: Patologia[]; onCerrar: () => void; onGuardado: (l: PatologiaPaciente[]) => void;
+function ModalPatologia({ pacienteId, catalogo, inicialId, onCrearNueva, onCerrar, onGuardado }: {
+  pacienteId: number; catalogo: Patologia[]; inicialId?: number; onCrearNueva: () => void;
+  onCerrar: () => void; onGuardado: (l: PatologiaPaciente[]) => void;
 }) {
-  const [patologiaId, setPatologiaId] = useState<number | "">("");
+  const [patologiaId, setPatologiaId] = useState<number | "">(inicialId ?? "");
   const [grado, setGrado] = useState("");
   const [fecha, setFecha] = useState("");
   const [notas, setNotas] = useState("");
@@ -47,6 +49,9 @@ function ModalPatologia({ pacienteId, catalogo, onCerrar, onGuardado }: {
             <option value="">Elegí una…</option>
             {catalogo.map((p) => <option key={p.id} value={p.id}>{p.nombre}{p.sigla ? ` (${p.sigla})` : ""}</option>)}
           </select>
+          <button type="button" onClick={onCrearNueva} className="text-xs font-bold mt-1.5 hover:underline" style={{ color: "var(--color-primary)" }}>
+            ¿No está en la lista? Creala
+          </button>
         </Campo>
         <div className="grid grid-cols-2 gap-3">
           <Campo label="Grado (opcional)"><input className="input-base" value={grado} onChange={(e) => setGrado(e.target.value)} placeholder="Ej: Grado I" maxLength={30} /></Campo>
@@ -67,7 +72,10 @@ export function PatologiasPaciente({ pacienteId, patologias, setPatologias }: {
 }) {
   const [catalogo, setCatalogo] = useState<Patologia[]>([]);
   const [modal, setModal] = useState(false);
-  useEffect(() => { clinicaService.patologias().then(setCatalogo).catch(() => {}); }, []);
+  const [creando, setCreando] = useState(false);
+  const [preseleccion, setPreseleccion] = useState<number | undefined>();
+  const cargarCatalogo = () => clinicaService.patologias().then(setCatalogo).catch(() => {});
+  useEffect(() => { cargarCatalogo(); }, []);
 
   const descartar = async (p: PatologiaPaciente) => {
     try {
@@ -112,8 +120,11 @@ export function PatologiasPaciente({ pacienteId, patologias, setPatologias }: {
           ))}
         </ul>
       )}
-      {modal && <ModalPatologia pacienteId={pacienteId} catalogo={catalogo} onCerrar={() => setModal(false)}
-        onGuardado={(l) => { setPatologias(l); setModal(false); }} />}
+      {modal && !creando && <ModalPatologia pacienteId={pacienteId} catalogo={catalogo} inicialId={preseleccion}
+        onCrearNueva={() => setCreando(true)} onCerrar={() => { setModal(false); setPreseleccion(undefined); }}
+        onGuardado={(l) => { setPatologias(l); setModal(false); setPreseleccion(undefined); }} />}
+      {creando && <ModalNuevaPatologia onCerrar={() => setCreando(false)}
+        onCreada={async (p) => { await cargarCatalogo(); setPreseleccion(p.id); setCreando(false); }} />}
     </section>
   );
 }

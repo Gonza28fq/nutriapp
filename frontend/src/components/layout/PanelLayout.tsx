@@ -8,6 +8,7 @@ import { useAuthStore } from "@/stores/auth.store";
 import { useAppConfig } from "@/hooks/useAppConfig";
 import { useClima, useReloj, saludo } from "@/hooks/useBarra";
 import toast from "react-hot-toast";
+import FondoAnimado from "./FondoAnimado";
 
 const NAV = [
   { to: "/panel",              label: "Inicio",       icon: Home, end: true },
@@ -36,23 +37,6 @@ function Avatar({ foto, inicial, tam = "w-9 h-9" }: { foto?: string | null; inic
     <div className={`${tam} rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center text-white font-bold text-sm ring-2 ring-white`}
       style={{ background: "linear-gradient(135deg, var(--color-primary-light), var(--color-primary))" }}>
       {foto ? <img src={foto} alt="" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = "none")} /> : inicial}
-    </div>
-  );
-}
-
-/** Fondo decorativo: manchas pastel difuminadas que se mueven muy despacio. */
-function FondoDecorativo() {
-  return (
-    <div aria-hidden className="fixed inset-0 -z-10 overflow-hidden pointer-events-none" style={{ background: "var(--color-body-bg)" }}>
-      <div className="absolute -top-32 -right-24 w-[28rem] h-[28rem] rounded-full blur-3xl opacity-60"
-        style={{ background: "radial-gradient(circle, var(--color-primary-border), transparent 70%)", animation: "flotar 18s ease-in-out infinite" }} />
-      <div className="absolute top-1/3 -left-32 w-[24rem] h-[24rem] rounded-full blur-3xl opacity-50"
-        style={{ background: "radial-gradient(circle, var(--c-lila-bg), transparent 70%)", animation: "flotar 22s ease-in-out infinite reverse" }} />
-      <div className="absolute -bottom-40 right-1/4 w-[26rem] h-[26rem] rounded-full blur-3xl opacity-60"
-        style={{ background: "radial-gradient(circle, var(--c-durazno-bg), transparent 70%)", animation: "flotar 26s ease-in-out infinite" }} />
-      {/* puntitos sutiles */}
-      <div className="absolute inset-0 opacity-[0.35]"
-        style={{ backgroundImage: "radial-gradient(var(--color-primary-border) 1px, transparent 1px)", backgroundSize: "26px 26px" }} />
     </div>
   );
 }
@@ -106,7 +90,7 @@ export default function PanelLayout() {
 
   return (
     <div className="min-h-screen">
-      <FondoDecorativo />
+      <FondoAnimado />
 
       {/* ── Barra lateral: tablet (solo íconos) y escritorio ─────────────── */}
       <aside className="hidden md:flex fixed z-30 top-3 bottom-3 left-3 w-[4.75rem] lg:w-64 flex-col rounded-[1.75rem] bg-white/85 backdrop-blur-xl border"

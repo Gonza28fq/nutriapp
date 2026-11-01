@@ -16,7 +16,8 @@ const tabs: { id: Tab; label: string; icon: typeof User }[] = [
   { id: "password",    label: "Contraseña",   icon: Lock },
   { id: "apariencia",  label: "Apariencia",   icon: Palette },
   { id: "consultorio", label: "Consultorio",  icon: Building2 },
-  { id: "redes",       label: "Redes",        icon: Share2 },
+  // "Redes" solo alimentaba el pie del sitio público, que está desactivado en esta versión.
+  // { id: "redes",       label: "Redes",        icon: Share2 },
 ];
 
 export default function Configuracion() {
@@ -326,7 +327,7 @@ export default function Configuracion() {
           {tabActiva === "consultorio" && (
             <div className="panel-card space-y-5">
               <h2 className="font-display text-lg font-semibold" style={{ color: "var(--color-text)" }}>Información del consultorio</h2>
-              <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>Esta información se muestra en el sitio público.</p>
+              <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>Los datos de tu consultorio quedan guardados en tu perfil.</p>
               {[
                 { key: "consultorio_nombre",    label: "Nombre del consultorio", placeholder: "Ej: Consultorio Melina García" },
                 { key: "consultorio_direccion", label: "Dirección",              placeholder: "Ej: Av. Siempreviva 742, Tucumán" },

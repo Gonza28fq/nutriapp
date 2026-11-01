@@ -74,6 +74,8 @@ const d = <T>(p: Promise<{ data: { data: T } }>) => p.then((r) => r.data.data);
 // ── Servicio ─────────────────────────────────────────────────────────────
 export const clinicaService = {
   patologias: () => d<Patologia[]>(api.get("/patologias")),
+  crearPatologia: (datos: Datos) => d<{ id: number; codigo: string }>(api.post("/patologias", datos)),
+  actualizarPatologia: (id: number, datos: Datos) => api.put(`/patologias/${id}`, datos),
   pacientesConPatologia: (codigo: string) => d<PacienteConPatologia[]>(api.get(`/patologias/${codigo}/pacientes`)),
   patologiasDePaciente: (pid: number) => d<PatologiaPaciente[]>(api.get(`/pacientes/${pid}/patologias`)),
   guardarPatologia: (pid: number, patologiaId: number, datos: Datos) =>

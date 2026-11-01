@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronRight, Search, Info } from "lucide-react";
+import { ChevronRight, Search, Info, Plus } from "lucide-react";
+import ModalNuevaPatologia from "@/components/ModalNuevaPatologia";
 import toast from "react-hot-toast";
 import { clinicaService, type Patologia, type PacienteConPatologia } from "@/services/clinica.service";
 import { Cargando, Vacio, Iniciales, OrigenBadge } from "@/components/ui";
@@ -17,10 +18,10 @@ export default function Patologias() {
   const [catalogo, setCatalogo] = useState<Patologia[] | null>(null);
   const [pacientes, setPacientes] = useState<PacienteConPatologia[] | null>(null);
   const [busqueda, setBusqueda] = useState("");
+  const [nueva, setNueva] = useState(false);
+  const cargarCatalogo = () => clinicaService.patologias().then(setCatalogo).catch(() => toast.error("No se pudieron cargar las patologías"));
 
-  useEffect(() => {
-    clinicaService.patologias().then(setCatalogo).catch(() => toast.error("No se pudieron cargar las patologías"));
-  }, []);
+  useEffect(() => { cargarCatalogo(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Si no se eligió ninguna, abrir la primera que tenga pacientes
   const seleccion = codigo ?? catalogo?.find((p) => p.pacientes > 0)?.codigo ?? catalogo?.[0]?.codigo;
@@ -44,10 +45,16 @@ export default function Patologias() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="page-title">Patologías</h1>
-        <p className="page-sub">Pacientes activos agrupados por patología. Sobrepeso y obesidad se calculan solos con el último IMC.</p>
+      <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+        <div className="flex-1">
+          <h1 className="page-title">Patologías</h1>
+          <p className="page-sub">Pacientes activos agrupados por patología. Sobrepeso y obesidad se calculan solos con el último IMC.</p>
+        </div>
+        <button onClick={() => setNueva(true)} className="btn-primary self-start sm:self-auto"><Plus className="w-4 h-4" /> Nueva patología</button>
       </div>
+
+      {nueva && <ModalNuevaPatologia onCerrar={() => setNueva(false)}
+        onCreada={(p) => { setNueva(false); cargarCatalogo(); navigate(`/panel/patologias/${p.codigo}`); }} />}
 
       {/* Tarjetas por patología */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
