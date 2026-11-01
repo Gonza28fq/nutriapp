@@ -93,6 +93,24 @@ export const DashboardController = {
          ORDER BY MIN(date_part('year', age(fecha_nacimiento)))`
       );
 
+      // IMC actual (última medición con IMC) de cada paciente activo — solo el número, anónimo
+      const [imcActual] = await pool.query<RowDataPacket[]>(
+        `SELECT round(u.imc::numeric, 1)::float AS imc FROM (
+           SELECT DISTINCT ON (m.paciente_id) m.paciente_id, m.imc FROM mediciones m
+           JOIN pacientes p ON p.id = m.paciente_id AND p.activo
+           WHERE m.imc IS NOT NULL ORDER BY m.paciente_id, m.fecha DESC, m.id DESC) u
+         ORDER BY u.imc`
+      );
+      // Cambio de peso (última − primera medición) de cada paciente activo con 2 o más pesos
+      const [cambiosPeso] = await pool.query<RowDataPacket[]>(
+        `SELECT round((ult.peso_kg - pri.peso_kg)::numeric, 1)::float AS cambio, (ult.fecha - pri.fecha) AS dias
+         FROM pacientes p
+         JOIN LATERAL (SELECT peso_kg, fecha FROM mediciones WHERE paciente_id = p.id AND peso_kg IS NOT NULL ORDER BY fecha, id LIMIT 1) pri ON true
+         JOIN LATERAL (SELECT peso_kg, fecha FROM mediciones WHERE paciente_id = p.id AND peso_kg IS NOT NULL ORDER BY fecha DESC, id DESC LIMIT 1) ult ON true
+         WHERE p.activo AND (SELECT count(*) FROM mediciones WHERE paciente_id = p.id AND peso_kg IS NOT NULL) >= 2
+         ORDER BY cambio`
+      );
+
       const [planesPorEstado] = await pool.query<RowDataPacket[]>(
         `SELECT estado, COUNT(*) as total FROM planes GROUP BY estado`
       );
@@ -112,6 +130,8 @@ export const DashboardController = {
           pacientesPorSexo,
           pacientesPorEdad,
           planesPorEstado,
+          imcActual: (imcActual as RowDataPacket[]).map((r) => r.imc),
+          cambiosPeso: (cambiosPeso as RowDataPacket[]).map((r) => ({ cambio: r.cambio, dias: r.dias })),
           totales: {
             pacientes:  (totPacientes as any).total,
             consultas:  (totConsultas as any).total,
