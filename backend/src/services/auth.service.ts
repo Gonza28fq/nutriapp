@@ -1,3 +1,4 @@
+import { JWT_SECRET } from "../config/seguridad";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { UsuarioModel } from "../models/usuario.model";
@@ -32,7 +33,7 @@ export const AuthService = {
       rol:    usuario.rol,
     };
 
-const secret = process.env.JWT_SECRET ?? "fallback_secret";
+const secret = JWT_SECRET;
 const expira = (process.env.JWT_EXPIRES_IN ?? "8h") as jwt.SignOptions["expiresIn"];
 
 const token = jwt.sign(payload, secret, { expiresIn: expira });
