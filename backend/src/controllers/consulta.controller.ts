@@ -3,7 +3,7 @@ import { body, validationResult } from "express-validator";
 import { ConsultaModel } from "../models/consulta.model";
 import { AuthRequest } from "../types";
 import { AppError } from "../middlewares/error.middleware";
-import { calcularIMC } from "../utils/helpers";
+import { ClinicaModel } from "../models/clinica.model";
 
 export const crearConsultaValidators = [
   body("paciente_id").notEmpty().withMessage("El paciente es requerido"),
@@ -58,20 +58,18 @@ export const ConsultaController = {
       const consultaId = await ConsultaModel.create(consultaData);
 
       if (medicion && Object.keys(medicion).length > 0) {
-        if (medicion.peso_kg && medicion.talla_cm) {
-          const { imc, clasificacion } = calcularIMC(
-            Number(medicion.peso_kg),
-            Number(medicion.talla_cm)
-          );
-          medicion.imc               = imc;
-          medicion.clasificacion_imc = clasificacion;
+        try {
+          // crearMedicion calcula IMC, clasificación e índice cintura/cadera
+          await ClinicaModel.crearMedicion(Number(consultaData.paciente_id), {
+            ...medicion,
+            consulta_id: consultaId,
+            fecha:       consultaData.fecha,
+          });
+        } catch (e) {
+          // Sin medición válida no queda una consulta a medias
+          await ConsultaModel.delete(consultaId);
+          throw e;
         }
-        await ConsultaModel.createMedicion({
-          ...medicion,
-          paciente_id: consultaData.paciente_id,
-          consulta_id: consultaId,
-          fecha:       consultaData.fecha,
-        });
       }
 
       const consulta = await ConsultaModel.findById(consultaId);
