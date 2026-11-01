@@ -1,5 +1,5 @@
 import pool from "../config/database";
-import { RowDataPacket, ResultSetHeader } from "mysql2";
+import { RowDataPacket, ResultSetHeader } from "../config/db-types";
 
 export interface RecetaRow extends RowDataPacket {
   id: number;
@@ -35,7 +35,7 @@ export const RecetaModel = {
       SELECT r.*,
         CASE WHEN r.paciente_id IS NULL THEN 'global' ELSE 'paciente' END as tipo
       FROM recetas r
-      WHERE r.activa = 1
+      WHERE r.activa = TRUE
     `;
     const values: unknown[] = [];
 
@@ -47,7 +47,7 @@ export const RecetaModel = {
     }
 
     if (params.busqueda) {
-      query += ` AND r.nombre LIKE ?`;
+      query += ` AND unaccent(r.nombre) ILIKE unaccent(?)`;
       values.push(`%${params.busqueda}%`);
     }
 
@@ -142,6 +142,6 @@ export const RecetaModel = {
   },
 
   async softDelete(id: number): Promise<void> {
-    await pool.query("UPDATE recetas SET activa = 0 WHERE id = ?", [id]);
+    await pool.query("UPDATE recetas SET activa = FALSE WHERE id = ?", [id]);
   },
 };

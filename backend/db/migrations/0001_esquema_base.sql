@@ -1,465 +1,451 @@
--- 0001 · Esquema base (estado al 2026-10-31, tomado de la base local).
--- Idempotente: en una base existente no cambia nada; en una vacía crea todo.
-SET FOREIGN_KEY_CHECKS = 0;
+-- 0001 · Esquema base en PostgreSQL
+-- Traducción 1:1 del esquema MySQL que estaba en producción hasta noviembre 2026,
+-- para poder copiar los datos tal cual. Las mejoras van en migraciones siguientes.
 
-CREATE TABLE IF NOT EXISTS `adjuntos` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `paciente_id` int unsigned NOT NULL,
-  `entidad` enum('consulta','plan','laboratorio','otro') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `entidad_id` int unsigned DEFAULT NULL,
-  `nombre_archivo` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `url` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `tipo_mime` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `tamanio_bytes` int unsigned DEFAULT NULL,
-  `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `paciente_id` (`paciente_id`),
-  CONSTRAINT `adjuntos_ibfk_1` FOREIGN KEY (`paciente_id`) REFERENCES `pacientes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `alimentos_paciente` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `paciente_id` int unsigned NOT NULL,
-  `alimento` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `tipo` enum('permitido','prohibido','limitado') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `motivo` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `paciente_id` (`paciente_id`),
-  CONSTRAINT `alimentos_paciente_ibfk_1` FOREIGN KEY (`paciente_id`) REFERENCES `pacientes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `anamnesis_alimentaria` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `paciente_id` int unsigned NOT NULL,
-  `realiza_desayuno` tinyint(1) DEFAULT '0',
-  `horario_desayuno` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `realiza_almuerzo` tinyint(1) DEFAULT '0',
-  `horario_almuerzo` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `realiza_merienda` tinyint(1) DEFAULT '0',
-  `horario_merienda` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `realiza_cena` tinyint(1) DEFAULT '0',
-  `horario_cena` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `comida_que_saltea` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `comida_que_le_cuesta` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `motivo_dificultad` text COLLATE utf8mb4_unicode_ci,
-  `tiempo_dedicado` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `lugar_comidas` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `quien_cocina` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `quien_hace_compras` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `consume_pan_galletitas` tinyint(1) DEFAULT '0',
-  `cantidad_pan_por_dia` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `repite_plato` tinyint(1) DEFAULT '0',
-  `consume_entre_comidas` tinyint(1) DEFAULT '0',
-  `que_consume_entre_comidas` text COLLATE utf8mb4_unicode_ci,
-  `consume_dulce_poscomida` tinyint(1) DEFAULT '0',
-  `que_consume_poscomida` text COLLATE utf8mb4_unicode_ci,
-  `tipo_coccion` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `frecuencia_come_afuera` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `liquidos_consumo_diario` text COLLATE utf8mb4_unicode_ci,
-  `liquidos_durante_actividad` text COLLATE utf8mb4_unicode_ci,
-  `liquidos_durante_comidas` text COLLATE utf8mb4_unicode_ci,
-  `consume_mate_te_cafe` tinyint(1) DEFAULT '0',
-  `infusiones_detalle` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `usa_edulcorante` tinyint(1) DEFAULT '0',
-  `edulcorante_detalle` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `recordatorio_desayuno` text COLLATE utf8mb4_unicode_ci,
-  `recordatorio_almuerzo` text COLLATE utf8mb4_unicode_ci,
-  `recordatorio_merienda` text COLLATE utf8mb4_unicode_ci,
-  `recordatorio_cena` text COLLATE utf8mb4_unicode_ci,
-  `recordatorio_otros` text COLLATE utf8mb4_unicode_ci,
-  `alimentos_no_le_gustan` text COLLATE utf8mb4_unicode_ci,
-  `notas` text COLLATE utf8mb4_unicode_ci,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `paciente_id` (`paciente_id`),
-  CONSTRAINT `anamnesis_alimentaria_ibfk_1` FOREIGN KEY (`paciente_id`) REFERENCES `pacientes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `blog_categorias` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `slug` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `slug` (`slug`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `blog_post_recetas` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `post_id` int unsigned NOT NULL,
-  `receta_id` int unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `post_id` (`post_id`),
-  KEY `receta_id` (`receta_id`),
-  CONSTRAINT `blog_post_recetas_ibfk_1` FOREIGN KEY (`post_id`) REFERENCES `blog_posts` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `blog_post_recetas_ibfk_2` FOREIGN KEY (`receta_id`) REFERENCES `recetas` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `blog_posts` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `categoria_id` int unsigned DEFAULT NULL,
-  `titulo` varchar(300) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `slug` varchar(300) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `resumen` text COLLATE utf8mb4_unicode_ci,
-  `contenido` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
-  `imagen_portada` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `estado` enum('borrador','publicado','archivado') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'borrador',
-  `publicado_en` datetime DEFAULT NULL,
-  `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `actualizado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `slug` (`slug`),
-  KEY `categoria_id` (`categoria_id`),
-  CONSTRAINT `blog_posts_ibfk_1` FOREIGN KEY (`categoria_id`) REFERENCES `blog_categorias` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `configuracion` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `usuario_id` int unsigned NOT NULL,
-  `foto_perfil` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `logo_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `nombre_app` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT 'NutriApp',
-  `color_primario` varchar(7) COLLATE utf8mb4_unicode_ci DEFAULT '#ff2484',
-  `tema` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT 'rosa',
-  `consultorio_nombre` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `consultorio_direccion` varchar(300) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `consultorio_telefono` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `consultorio_email` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `instagram` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `facebook` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `whatsapp` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `actualizado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `usuario_id` (`usuario_id`),
-  CONSTRAINT `configuracion_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `consultas` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `paciente_id` int unsigned NOT NULL,
-  `turno_id` int unsigned DEFAULT NULL,
-  `fecha` date NOT NULL,
-  `sede_id` int unsigned DEFAULT NULL,
-  `tipo_consulta` enum('primera_vez','control','seguimiento') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'control',
-  `motivo_consulta` text COLLATE utf8mb4_unicode_ci,
-  `problemas` text COLLATE utf8mb4_unicode_ci,
-  `objetivos` text COLLATE utf8mb4_unicode_ci,
-  `observaciones` text COLLATE utf8mb4_unicode_ci,
-  `indicaciones` text COLLATE utf8mb4_unicode_ci,
-  `proximo_control` date DEFAULT NULL,
-  `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `turno_id` (`turno_id`),
-  KEY `sede_id` (`sede_id`),
-  KEY `idx_paciente_fecha` (`paciente_id`,`fecha`),
-  CONSTRAINT `consultas_ibfk_1` FOREIGN KEY (`paciente_id`) REFERENCES `pacientes` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `consultas_ibfk_2` FOREIGN KEY (`turno_id`) REFERENCES `turnos` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `consultas_ibfk_3` FOREIGN KEY (`sede_id`) REFERENCES `sedes` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `consumo_alimentos` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `paciente_id` int unsigned NOT NULL,
-  `grupo_id` int unsigned NOT NULL,
-  `consume` tinyint(1) DEFAULT '1',
-  `cuales` text COLLATE utf8mb4_unicode_ci,
-  `cuales_no` text COLLATE utf8mb4_unicode_ci,
-  `motivo_no_consume` text COLLATE utf8mb4_unicode_ci,
-  `frecuencia` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `cantidad` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_paciente_grupo` (`paciente_id`,`grupo_id`),
-  KEY `grupo_id` (`grupo_id`),
-  CONSTRAINT `consumo_alimentos_ibfk_1` FOREIGN KEY (`paciente_id`) REFERENCES `pacientes` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `consumo_alimentos_ibfk_2` FOREIGN KEY (`grupo_id`) REFERENCES `grupos_alimentos` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `grupos_alimentos` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `historia_clinica` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `paciente_id` int unsigned NOT NULL,
-  `antec_familiar_diabetes` tinyint(1) DEFAULT '0',
-  `antec_familiar_hipertension` tinyint(1) DEFAULT '0',
-  `antec_familiar_dislipemia` tinyint(1) DEFAULT '0',
-  `antec_familiar_obesidad` tinyint(1) DEFAULT '0',
-  `antec_familiar_otros` text COLLATE utf8mb4_unicode_ci,
-  `tiene_diabetes_1` tinyint(1) DEFAULT '0',
-  `tiene_diabetes_2` tinyint(1) DEFAULT '0',
-  `tiene_hipertension` tinyint(1) DEFAULT '0',
-  `tiene_dislipemia` tinyint(1) DEFAULT '0',
-  `tiene_constipacion` tinyint(1) DEFAULT '0',
-  `tiene_alteraciones_intestinales` tinyint(1) DEFAULT '0',
-  `tiene_diverticulos` tinyint(1) DEFAULT '0',
-  `tiene_celiaquia` tinyint(1) DEFAULT '0',
-  `tiene_enfermedad_renal` tinyint(1) DEFAULT '0',
-  `tiene_anemia` tinyint(1) DEFAULT '0',
-  `tiene_osteoporosis` tinyint(1) DEFAULT '0',
-  `tiene_hipotiroidismo` tinyint(1) DEFAULT '0',
-  `tiene_hipertiroidismo` tinyint(1) DEFAULT '0',
-  `tiene_artritis_reumatoidea` tinyint(1) DEFAULT '0',
-  `otras_patologias` text COLLATE utf8mb4_unicode_ci,
-  `intolerancias` text COLLATE utf8mb4_unicode_ci,
-  `alergias_alimentarias` text COLLATE utf8mb4_unicode_ci,
-  `toma_medicacion` tinyint(1) DEFAULT '0',
-  `medicacion_detalle` text COLLATE utf8mb4_unicode_ci,
-  `toma_suplementos` tinyint(1) DEFAULT '0',
-  `suplementos_detalle` text COLLATE utf8mb4_unicode_ci,
-  `tiene_hijos` tinyint(1) DEFAULT NULL,
-  `alteracion_ciclo_menstrual` tinyint(1) DEFAULT '0',
-  `en_menopausia` tinyint(1) DEFAULT '0',
-  `tiempo_menopausia` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `fuma` tinyint(1) DEFAULT '0',
-  `cigarrillos_por_dia` tinyint unsigned DEFAULT NULL,
-  `duerme_bien` tinyint(1) DEFAULT NULL,
-  `horas_sueno` decimal(3,1) DEFAULT NULL,
-  `presenta_ronquidos` tinyint(1) DEFAULT '0',
-  `tiene_constipacion_diarrea` tinyint(1) DEFAULT '0',
-  `inflamacion_abdominal` tinyint(1) DEFAULT '0',
-  `dolores_cabeza_recurrentes` tinyint(1) DEFAULT '0',
-  `realiza_ejercicio` tinyint(1) DEFAULT '0',
-  `tipo_actividad` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `dias_actividad` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `duracion_actividad` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `ocupacion` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `horario_laboral` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `diagnostico_inicial` text COLLATE utf8mb4_unicode_ci,
-  `objetivos_iniciales` text COLLATE utf8mb4_unicode_ci,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `paciente_id` (`paciente_id`),
-  CONSTRAINT `historia_clinica_ibfk_1` FOREIGN KEY (`paciente_id`) REFERENCES `pacientes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `laboratorios` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `paciente_id` int unsigned NOT NULL,
-  `consulta_id` int unsigned DEFAULT NULL,
-  `fecha` date NOT NULL,
-  `colesterol_total` decimal(6,2) DEFAULT NULL,
-  `trigliceridos` decimal(6,2) DEFAULT NULL,
-  `hdl` decimal(6,2) DEFAULT NULL,
-  `ldl` decimal(6,2) DEFAULT NULL,
-  `vldl` decimal(6,2) DEFAULT NULL,
-  `glucemia` decimal(6,2) DEFAULT NULL,
-  `insulina` decimal(6,2) DEFAULT NULL,
-  `hemoglobina_glicosilada` decimal(4,2) DEFAULT NULL,
-  `homa_ir` decimal(5,2) DEFAULT NULL,
-  `creatinina` decimal(5,2) DEFAULT NULL,
-  `urea` decimal(5,2) DEFAULT NULL,
-  `acido_urico` decimal(5,2) DEFAULT NULL,
-  `tsh` decimal(6,3) DEFAULT NULL,
-  `t3` decimal(6,3) DEFAULT NULL,
-  `t4` decimal(6,3) DEFAULT NULL,
-  `hemoglobina` decimal(5,2) DEFAULT NULL,
-  `hematocrito` decimal(5,2) DEFAULT NULL,
-  `ferritina` decimal(6,2) DEFAULT NULL,
-  `vitamina_d` decimal(6,2) DEFAULT NULL,
-  `vitamina_b12` decimal(6,2) DEFAULT NULL,
-  `otros` text COLLATE utf8mb4_unicode_ci,
-  `notas` text COLLATE utf8mb4_unicode_ci,
-  PRIMARY KEY (`id`),
-  KEY `consulta_id` (`consulta_id`),
-  KEY `idx_paciente_fecha` (`paciente_id`,`fecha`),
-  CONSTRAINT `laboratorios_ibfk_1` FOREIGN KEY (`paciente_id`) REFERENCES `pacientes` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `laboratorios_ibfk_2` FOREIGN KEY (`consulta_id`) REFERENCES `consultas` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `mediciones` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `paciente_id` int unsigned NOT NULL,
-  `consulta_id` int unsigned DEFAULT NULL,
-  `fecha` date NOT NULL,
-  `peso_kg` decimal(5,2) DEFAULT NULL,
-  `talla_cm` decimal(5,1) DEFAULT NULL,
-  `imc` decimal(5,2) DEFAULT NULL,
-  `clasificacion_imc` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `circunferencia_cintura_cm` decimal(5,1) DEFAULT NULL,
-  `circunferencia_cadera_cm` decimal(5,1) DEFAULT NULL,
-  `indice_cintura_cadera` decimal(4,3) DEFAULT NULL,
-  `porcentaje_masa_grasa` decimal(5,2) DEFAULT NULL,
-  `porcentaje_masa_magra` decimal(5,2) DEFAULT NULL,
-  `presion_sistolica` smallint unsigned DEFAULT NULL,
-  `presion_diastolica` smallint unsigned DEFAULT NULL,
-  `frecuencia_cardiaca` smallint unsigned DEFAULT NULL,
-  `peso_habitual_kg` decimal(5,2) DEFAULT NULL,
-  `peso_posible_kg` decimal(5,2) DEFAULT NULL,
-  `notas` text COLLATE utf8mb4_unicode_ci,
-  PRIMARY KEY (`id`),
-  KEY `consulta_id` (`consulta_id`),
-  KEY `idx_paciente_fecha` (`paciente_id`,`fecha`),
-  CONSTRAINT `mediciones_ibfk_1` FOREIGN KEY (`paciente_id`) REFERENCES `pacientes` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `mediciones_ibfk_2` FOREIGN KEY (`consulta_id`) REFERENCES `consultas` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `pacientes` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `apellido` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `dni` varchar(15) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `fecha_nacimiento` date DEFAULT NULL,
-  `edad` tinyint unsigned DEFAULT NULL,
-  `sexo` enum('masculino','femenino','otro') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `email` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `celular` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `domicilio` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `localidad` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `derivado_por` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `activo` tinyint(1) NOT NULL DEFAULT '1',
-  `observaciones_generales` text COLLATE utf8mb4_unicode_ci,
-  `prioridad` enum('normal','alta','urgente') COLLATE utf8mb4_unicode_ci DEFAULT 'normal',
-  `motivo_prioridad` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `actualizado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `dni` (`dni`),
-  KEY `idx_nombre` (`apellido`,`nombre`),
-  KEY `idx_dni` (`dni`),
-  FULLTEXT KEY `idx_busqueda` (`nombre`,`apellido`,`dni`,`celular`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `plan_comidas` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `plan_id` int unsigned NOT NULL,
-  `dia` tinyint unsigned NOT NULL,
-  `momento` enum('desayuno','almuerzo','merienda','cena','colacion_am','colacion_pm') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `descripcion` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `receta_id` int unsigned DEFAULT NULL,
-  `calorias_kcal` decimal(7,2) DEFAULT NULL,
-  `proteinas_g` decimal(6,2) DEFAULT NULL,
-  `carbohidratos_g` decimal(6,2) DEFAULT NULL,
-  `grasas_g` decimal(6,2) DEFAULT NULL,
-  `fibra_g` decimal(6,2) DEFAULT NULL,
-  `notas` text COLLATE utf8mb4_unicode_ci,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_plan_dia_momento` (`plan_id`,`dia`,`momento`),
-  KEY `receta_id` (`receta_id`),
-  CONSTRAINT `plan_comidas_ibfk_1` FOREIGN KEY (`plan_id`) REFERENCES `planes` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `plan_comidas_ibfk_2` FOREIGN KEY (`receta_id`) REFERENCES `recetas` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `plan_plantillas` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `nombre` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `descripcion` text COLLATE utf8mb4_unicode_ci,
-  `patologia_target` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `activa` tinyint(1) NOT NULL DEFAULT '1',
-  `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `planes` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `paciente_id` int unsigned NOT NULL,
-  `plantilla_id` int unsigned DEFAULT NULL,
-  `consulta_id` int unsigned DEFAULT NULL,
-  `nombre` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `fecha_inicio` date DEFAULT NULL,
-  `fecha_fin` date DEFAULT NULL,
-  `estado` enum('borrador','activo','vencido','archivado') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'borrador',
-  `calorias_objetivo_kcal` decimal(7,2) DEFAULT NULL,
-  `proteinas_objetivo_g` decimal(6,2) DEFAULT NULL,
-  `carbohidratos_objetivo_g` decimal(6,2) DEFAULT NULL,
-  `grasas_objetivo_g` decimal(6,2) DEFAULT NULL,
-  `observaciones` text COLLATE utf8mb4_unicode_ci,
-  `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `actualizado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `paciente_id` (`paciente_id`),
-  KEY `plantilla_id` (`plantilla_id`),
-  KEY `consulta_id` (`consulta_id`),
-  CONSTRAINT `planes_ibfk_1` FOREIGN KEY (`paciente_id`) REFERENCES `pacientes` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `planes_ibfk_2` FOREIGN KEY (`plantilla_id`) REFERENCES `plan_plantillas` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `planes_ibfk_3` FOREIGN KEY (`consulta_id`) REFERENCES `consultas` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `recetas` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `nombre` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `descripcion` text COLLATE utf8mb4_unicode_ci,
-  `ingredientes` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `preparacion` text COLLATE utf8mb4_unicode_ci,
-  `calorias_kcal` decimal(7,2) DEFAULT NULL,
-  `proteinas_g` decimal(6,2) DEFAULT NULL,
-  `carbohidratos_g` decimal(6,2) DEFAULT NULL,
-  `grasas_g` decimal(6,2) DEFAULT NULL,
-  `fibra_g` decimal(6,2) DEFAULT NULL,
-  `sodio_mg` decimal(7,2) DEFAULT NULL,
-  `porciones` tinyint unsigned DEFAULT '1',
-  `categoria` enum('desayuno','almuerzo','merienda','cena','colacion','postre','otro') COLLATE utf8mb4_unicode_ci DEFAULT 'otro',
-  `tiempo_preparacion_min` smallint unsigned DEFAULT NULL,
-  `dificultad` enum('facil','media','dificil') COLLATE utf8mb4_unicode_ci DEFAULT 'facil',
-  `apta_celiacos` tinyint(1) DEFAULT '0',
-  `apta_diabeticos` tinyint(1) DEFAULT '0',
-  `apta_hipertensos` tinyint(1) DEFAULT '0',
-  `apta_vegetarianos` tinyint(1) DEFAULT '0',
-  `imagen_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `notas` text COLLATE utf8mb4_unicode_ci,
-  `paciente_id` int unsigned DEFAULT NULL,
-  `activa` tinyint(1) NOT NULL DEFAULT '1',
-  `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `actualizado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `fk_recetas_paciente` (`paciente_id`),
-  CONSTRAINT `fk_recetas_paciente` FOREIGN KEY (`paciente_id`) REFERENCES `pacientes` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `sedes` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `direccion` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `activa` tinyint(1) NOT NULL DEFAULT '1',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `sitio_secciones` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `clave` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `valor` text COLLATE utf8mb4_unicode_ci,
-  `creado_en` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `actualizado_en` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `clave` (`clave`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `sitio_servicios` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `icono` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `titulo` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `descripcion` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `color` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT '#5c8a3c',
-  `activo` tinyint(1) DEFAULT '1',
-  `orden` int DEFAULT '0',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `sitio_stats` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `numero` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `etiqueta` varchar(60) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `orden` int DEFAULT '0',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `sitio_testimonios` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `texto` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `estrellas` tinyint DEFAULT '5',
-  `activo` tinyint(1) DEFAULT '1',
-  `orden` int DEFAULT '0',
-  `creado_en` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `turnos` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `paciente_id` int unsigned DEFAULT NULL,
-  `sede_id` int unsigned NOT NULL,
-  `fecha` date NOT NULL,
-  `hora` time DEFAULT NULL,
-  `tipo` enum('agendado','espontaneo') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'agendado',
-  `tipo_consulta` enum('primera_vez','control','seguimiento') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'primera_vez',
-  `estado` enum('pendiente','presente','ausente','cancelado') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pendiente',
-  `notas_turno` text COLLATE utf8mb4_unicode_ci,
-  `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `sede_id` (`sede_id`),
-  KEY `idx_fecha_sede` (`fecha`,`sede_id`),
-  KEY `idx_paciente_turnos` (`paciente_id`),
-  CONSTRAINT `turnos_ibfk_1` FOREIGN KEY (`paciente_id`) REFERENCES `pacientes` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `turnos_ibfk_2` FOREIGN KEY (`sede_id`) REFERENCES `sedes` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `usuarios` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `email` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `password_hash` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `rol` enum('admin','nutricionista') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'nutricionista',
-  `activo` tinyint(1) NOT NULL DEFAULT '1',
-  `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `actualizado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE EXTENSION IF NOT EXISTS unaccent;
 
-SET FOREIGN_KEY_CHECKS = 1;
+-- Mantiene `actualizado_en` al día (reemplaza el ON UPDATE CURRENT_TIMESTAMP de MySQL)
+CREATE OR REPLACE FUNCTION set_actualizado_en() RETURNS trigger AS $$
+BEGIN
+  NEW.actualizado_en := now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ── Usuarios y configuración ──────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS usuarios (
+  id             integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  nombre         varchar(100) NOT NULL,
+  email          varchar(150) NOT NULL UNIQUE,
+  password_hash  varchar(255) NOT NULL,
+  rol            text NOT NULL DEFAULT 'nutricionista' CHECK (rol IN ('admin', 'nutricionista')),
+  activo         boolean NOT NULL DEFAULT true,
+  creado_en      timestamptz NOT NULL DEFAULT now(),
+  actualizado_en timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS configuracion (
+  id                    integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  usuario_id            integer NOT NULL REFERENCES usuarios (id) ON DELETE CASCADE,
+  foto_perfil           varchar(500),
+  logo_url              varchar(500),
+  nombre_app            varchar(100) DEFAULT 'NutriApp',
+  color_primario        varchar(7) DEFAULT '#ff2484',
+  tema                  varchar(20) DEFAULT 'rosa',
+  consultorio_nombre    varchar(200),
+  consultorio_direccion varchar(300),
+  consultorio_telefono  varchar(50),
+  consultorio_email     varchar(150),
+  instagram             varchar(200),
+  facebook              varchar(200),
+  whatsapp              varchar(50),
+  creado_en             timestamptz NOT NULL DEFAULT now(),
+  actualizado_en        timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_configuracion_usuario ON configuracion (usuario_id);
+
+CREATE TABLE IF NOT EXISTS sedes (
+  id        integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  nombre    varchar(100) NOT NULL,
+  direccion varchar(255),
+  activa    boolean NOT NULL DEFAULT true
+);
+
+-- ── Pacientes ─────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS pacientes (
+  id                      integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  nombre                  varchar(100) NOT NULL,
+  apellido                varchar(100) NOT NULL,
+  dni                     varchar(15) UNIQUE,
+  fecha_nacimiento        date,
+  edad                    smallint,
+  sexo                    text CHECK (sexo IN ('masculino', 'femenino', 'otro')),
+  email                   varchar(150),
+  celular                 varchar(30),
+  domicilio               varchar(255),
+  localidad               varchar(100),
+  derivado_por            varchar(150),
+  activo                  boolean NOT NULL DEFAULT true,
+  observaciones_generales text,
+  prioridad               text DEFAULT 'normal' CHECK (prioridad IN ('normal', 'alta', 'urgente')),
+  motivo_prioridad        varchar(255),
+  creado_en               timestamptz NOT NULL DEFAULT now(),
+  actualizado_en          timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_pacientes_nombre ON pacientes (apellido, nombre);
+
+CREATE TABLE IF NOT EXISTS turnos (
+  id            integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  paciente_id   integer REFERENCES pacientes (id) ON DELETE SET NULL,
+  sede_id       integer NOT NULL REFERENCES sedes (id),
+  fecha         date NOT NULL,
+  hora          time,
+  tipo          text NOT NULL DEFAULT 'agendado' CHECK (tipo IN ('agendado', 'espontaneo')),
+  tipo_consulta text NOT NULL DEFAULT 'primera_vez' CHECK (tipo_consulta IN ('primera_vez', 'control', 'seguimiento')),
+  estado        text NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'presente', 'ausente', 'cancelado')),
+  notas_turno   text,
+  creado_en     timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_turnos_fecha_sede ON turnos (fecha, sede_id);
+CREATE INDEX IF NOT EXISTS idx_turnos_paciente ON turnos (paciente_id);
+
+CREATE TABLE IF NOT EXISTS consultas (
+  id              integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  paciente_id     integer NOT NULL REFERENCES pacientes (id) ON DELETE CASCADE,
+  turno_id        integer REFERENCES turnos (id) ON DELETE SET NULL,
+  fecha           date NOT NULL,
+  sede_id         integer REFERENCES sedes (id),
+  tipo_consulta   text NOT NULL DEFAULT 'control' CHECK (tipo_consulta IN ('primera_vez', 'control', 'seguimiento')),
+  motivo_consulta text,
+  problemas       text,
+  objetivos       text,
+  observaciones   text,
+  indicaciones    text,
+  proximo_control date,
+  creado_en       timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_consultas_paciente_fecha ON consultas (paciente_id, fecha);
+CREATE INDEX IF NOT EXISTS idx_consultas_turno ON consultas (turno_id);
+CREATE INDEX IF NOT EXISTS idx_consultas_sede ON consultas (sede_id);
+
+CREATE TABLE IF NOT EXISTS mediciones (
+  id                        integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  paciente_id               integer NOT NULL REFERENCES pacientes (id) ON DELETE CASCADE,
+  consulta_id               integer REFERENCES consultas (id) ON DELETE SET NULL,
+  fecha                     date NOT NULL,
+  peso_kg                   numeric(5,2),
+  talla_cm                  numeric(5,1),
+  imc                       numeric(5,2),
+  clasificacion_imc         varchar(50),
+  circunferencia_cintura_cm numeric(5,1),
+  circunferencia_cadera_cm  numeric(5,1),
+  indice_cintura_cadera     numeric(4,3),
+  porcentaje_masa_grasa     numeric(5,2),
+  porcentaje_masa_magra     numeric(5,2),
+  presion_sistolica         smallint,
+  presion_diastolica        smallint,
+  frecuencia_cardiaca       smallint,
+  peso_habitual_kg          numeric(5,2),
+  peso_posible_kg           numeric(5,2),
+  notas                     text
+);
+CREATE INDEX IF NOT EXISTS idx_mediciones_paciente_fecha ON mediciones (paciente_id, fecha, id);
+CREATE INDEX IF NOT EXISTS idx_mediciones_consulta ON mediciones (consulta_id);
+
+CREATE TABLE IF NOT EXISTS laboratorios (
+  id                      integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  paciente_id             integer NOT NULL REFERENCES pacientes (id) ON DELETE CASCADE,
+  consulta_id             integer REFERENCES consultas (id) ON DELETE SET NULL,
+  fecha                   date NOT NULL,
+  colesterol_total        numeric(6,2),
+  trigliceridos           numeric(6,2),
+  hdl                     numeric(6,2),
+  ldl                     numeric(6,2),
+  vldl                    numeric(6,2),
+  glucemia                numeric(6,2),
+  insulina                numeric(6,2),
+  hemoglobina_glicosilada numeric(4,2),
+  homa_ir                 numeric(5,2),
+  creatinina              numeric(5,2),
+  urea                    numeric(5,2),
+  acido_urico             numeric(5,2),
+  tsh                     numeric(6,3),
+  t3                      numeric(6,3),
+  t4                      numeric(6,3),
+  hemoglobina             numeric(5,2),
+  hematocrito             numeric(5,2),
+  ferritina               numeric(6,2),
+  vitamina_d              numeric(6,2),
+  vitamina_b12            numeric(6,2),
+  otros                   text,
+  notas                   text
+);
+CREATE INDEX IF NOT EXISTS idx_laboratorios_paciente_fecha ON laboratorios (paciente_id, fecha);
+CREATE INDEX IF NOT EXISTS idx_laboratorios_consulta ON laboratorios (consulta_id);
+
+CREATE TABLE IF NOT EXISTS historia_clinica (
+  id                              integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  paciente_id                     integer NOT NULL UNIQUE REFERENCES pacientes (id) ON DELETE CASCADE,
+  antec_familiar_diabetes         boolean DEFAULT false,
+  antec_familiar_hipertension     boolean DEFAULT false,
+  antec_familiar_dislipemia       boolean DEFAULT false,
+  antec_familiar_obesidad         boolean DEFAULT false,
+  antec_familiar_otros            text,
+  tiene_diabetes_1                boolean DEFAULT false,
+  tiene_diabetes_2                boolean DEFAULT false,
+  tiene_hipertension              boolean DEFAULT false,
+  tiene_dislipemia                boolean DEFAULT false,
+  tiene_constipacion              boolean DEFAULT false,
+  tiene_alteraciones_intestinales boolean DEFAULT false,
+  tiene_diverticulos              boolean DEFAULT false,
+  tiene_celiaquia                 boolean DEFAULT false,
+  tiene_enfermedad_renal          boolean DEFAULT false,
+  tiene_anemia                    boolean DEFAULT false,
+  tiene_osteoporosis              boolean DEFAULT false,
+  tiene_hipotiroidismo            boolean DEFAULT false,
+  tiene_hipertiroidismo           boolean DEFAULT false,
+  tiene_artritis_reumatoidea      boolean DEFAULT false,
+  otras_patologias                text,
+  intolerancias                   text,
+  alergias_alimentarias           text,
+  toma_medicacion                 boolean DEFAULT false,
+  medicacion_detalle              text,
+  toma_suplementos                boolean DEFAULT false,
+  suplementos_detalle             text,
+  tiene_hijos                     boolean,
+  alteracion_ciclo_menstrual      boolean DEFAULT false,
+  en_menopausia                   boolean DEFAULT false,
+  tiempo_menopausia               varchar(100),
+  fuma                            boolean DEFAULT false,
+  cigarrillos_por_dia             smallint,
+  duerme_bien                     boolean,
+  horas_sueno                     numeric(3,1),
+  presenta_ronquidos              boolean DEFAULT false,
+  tiene_constipacion_diarrea      boolean DEFAULT false,
+  inflamacion_abdominal           boolean DEFAULT false,
+  dolores_cabeza_recurrentes      boolean DEFAULT false,
+  realiza_ejercicio               boolean DEFAULT false,
+  tipo_actividad                  varchar(200),
+  dias_actividad                  varchar(100),
+  duracion_actividad              varchar(100),
+  ocupacion                       varchar(150),
+  horario_laboral                 varchar(100),
+  diagnostico_inicial             text,
+  objetivos_iniciales             text
+);
+
+CREATE TABLE IF NOT EXISTS anamnesis_alimentaria (
+  id                         integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  paciente_id                integer NOT NULL UNIQUE REFERENCES pacientes (id) ON DELETE CASCADE,
+  realiza_desayuno           boolean DEFAULT false,
+  horario_desayuno           varchar(50),
+  realiza_almuerzo           boolean DEFAULT false,
+  horario_almuerzo           varchar(50),
+  realiza_merienda           boolean DEFAULT false,
+  horario_merienda           varchar(50),
+  realiza_cena               boolean DEFAULT false,
+  horario_cena               varchar(50),
+  comida_que_saltea          varchar(100),
+  comida_que_le_cuesta       varchar(100),
+  motivo_dificultad          text,
+  tiempo_dedicado            varchar(100),
+  lugar_comidas              varchar(100),
+  quien_cocina               varchar(100),
+  quien_hace_compras         varchar(100),
+  consume_pan_galletitas     boolean DEFAULT false,
+  cantidad_pan_por_dia       varchar(100),
+  repite_plato               boolean DEFAULT false,
+  consume_entre_comidas      boolean DEFAULT false,
+  que_consume_entre_comidas  text,
+  consume_dulce_poscomida    boolean DEFAULT false,
+  que_consume_poscomida      text,
+  tipo_coccion               varchar(200),
+  frecuencia_come_afuera     varchar(100),
+  liquidos_consumo_diario    text,
+  liquidos_durante_actividad text,
+  liquidos_durante_comidas   text,
+  consume_mate_te_cafe       boolean DEFAULT false,
+  infusiones_detalle         varchar(200),
+  usa_edulcorante            boolean DEFAULT false,
+  edulcorante_detalle        varchar(100),
+  recordatorio_desayuno      text,
+  recordatorio_almuerzo      text,
+  recordatorio_merienda      text,
+  recordatorio_cena          text,
+  recordatorio_otros         text,
+  alimentos_no_le_gustan     text,
+  notas                      text
+);
+
+CREATE TABLE IF NOT EXISTS grupos_alimentos (
+  id     integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  nombre varchar(100) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS consumo_alimentos (
+  id                integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  paciente_id       integer NOT NULL REFERENCES pacientes (id) ON DELETE CASCADE,
+  grupo_id          integer NOT NULL REFERENCES grupos_alimentos (id),
+  consume           boolean DEFAULT true,
+  cuales            text,
+  cuales_no         text,
+  motivo_no_consume text,
+  frecuencia        varchar(100),
+  cantidad          varchar(100),
+  CONSTRAINT uq_paciente_grupo UNIQUE (paciente_id, grupo_id)
+);
+CREATE INDEX IF NOT EXISTS idx_consumo_grupo ON consumo_alimentos (grupo_id);
+
+CREATE TABLE IF NOT EXISTS alimentos_paciente (
+  id          integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  paciente_id integer NOT NULL REFERENCES pacientes (id) ON DELETE CASCADE,
+  alimento    varchar(200) NOT NULL,
+  tipo        text NOT NULL CHECK (tipo IN ('permitido', 'prohibido', 'limitado')),
+  motivo      varchar(255)
+);
+CREATE INDEX IF NOT EXISTS idx_alimentos_paciente ON alimentos_paciente (paciente_id);
+
+CREATE TABLE IF NOT EXISTS adjuntos (
+  id             integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  paciente_id    integer NOT NULL REFERENCES pacientes (id) ON DELETE CASCADE,
+  entidad        text NOT NULL CHECK (entidad IN ('consulta', 'plan', 'laboratorio', 'otro')),
+  entidad_id     integer,
+  nombre_archivo varchar(255) NOT NULL,
+  url            varchar(500) NOT NULL,
+  tipo_mime      varchar(100),
+  tamanio_bytes  integer,
+  creado_en      timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_adjuntos_paciente ON adjuntos (paciente_id);
+
+-- ── Recetas y planes ──────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS recetas (
+  id                     integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  nombre                 varchar(200) NOT NULL,
+  descripcion            text,
+  ingredientes           text NOT NULL,
+  preparacion            text,
+  calorias_kcal          numeric(7,2),
+  proteinas_g            numeric(6,2),
+  carbohidratos_g        numeric(6,2),
+  grasas_g               numeric(6,2),
+  fibra_g                numeric(6,2),
+  sodio_mg               numeric(7,2),
+  porciones              smallint DEFAULT 1,
+  categoria              text DEFAULT 'otro' CHECK (categoria IN ('desayuno', 'almuerzo', 'merienda', 'cena', 'colacion', 'postre', 'otro')),
+  tiempo_preparacion_min integer,
+  dificultad             text DEFAULT 'facil' CHECK (dificultad IN ('facil', 'media', 'dificil')),
+  apta_celiacos          boolean DEFAULT false,
+  apta_diabeticos        boolean DEFAULT false,
+  apta_hipertensos       boolean DEFAULT false,
+  apta_vegetarianos      boolean DEFAULT false,
+  imagen_url             varchar(500),
+  notas                  text,
+  paciente_id            integer REFERENCES pacientes (id) ON DELETE SET NULL,
+  activa                 boolean NOT NULL DEFAULT true,
+  creado_en              timestamptz NOT NULL DEFAULT now(),
+  actualizado_en         timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_recetas_paciente ON recetas (paciente_id);
+
+CREATE TABLE IF NOT EXISTS plan_plantillas (
+  id               integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  nombre           varchar(200) NOT NULL,
+  descripcion      text,
+  patologia_target varchar(200),
+  activa           boolean NOT NULL DEFAULT true,
+  creado_en        timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS planes (
+  id                       integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  paciente_id              integer NOT NULL REFERENCES pacientes (id) ON DELETE CASCADE,
+  plantilla_id             integer REFERENCES plan_plantillas (id) ON DELETE SET NULL,
+  consulta_id              integer REFERENCES consultas (id) ON DELETE SET NULL,
+  nombre                   varchar(200),
+  fecha_inicio             date,
+  fecha_fin                date,
+  estado                   text NOT NULL DEFAULT 'borrador' CHECK (estado IN ('borrador', 'activo', 'vencido', 'archivado')),
+  calorias_objetivo_kcal   numeric(7,2),
+  proteinas_objetivo_g     numeric(6,2),
+  carbohidratos_objetivo_g numeric(6,2),
+  grasas_objetivo_g        numeric(6,2),
+  observaciones            text,
+  creado_en                timestamptz NOT NULL DEFAULT now(),
+  actualizado_en           timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_planes_paciente ON planes (paciente_id);
+CREATE INDEX IF NOT EXISTS idx_planes_plantilla ON planes (plantilla_id);
+CREATE INDEX IF NOT EXISTS idx_planes_consulta ON planes (consulta_id);
+
+CREATE TABLE IF NOT EXISTS plan_comidas (
+  id              integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  plan_id         integer NOT NULL REFERENCES planes (id) ON DELETE CASCADE,
+  dia             smallint NOT NULL,
+  momento         text NOT NULL CHECK (momento IN ('desayuno', 'almuerzo', 'merienda', 'cena', 'colacion_am', 'colacion_pm')),
+  descripcion     text NOT NULL,
+  receta_id       integer REFERENCES recetas (id) ON DELETE SET NULL,
+  calorias_kcal   numeric(7,2),
+  proteinas_g     numeric(6,2),
+  carbohidratos_g numeric(6,2),
+  grasas_g        numeric(6,2),
+  fibra_g         numeric(6,2),
+  notas           text,
+  CONSTRAINT uq_plan_dia_momento UNIQUE (plan_id, dia, momento)
+);
+CREATE INDEX IF NOT EXISTS idx_plan_comidas_receta ON plan_comidas (receta_id);
+
+-- ── Blog y sitio público (ocultos en el panel, se conservan) ──────────────
+CREATE TABLE IF NOT EXISTS blog_categorias (
+  id     integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  nombre varchar(100) NOT NULL,
+  slug   varchar(100) NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS blog_posts (
+  id             integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  categoria_id   integer REFERENCES blog_categorias (id) ON DELETE SET NULL,
+  titulo         varchar(300) NOT NULL,
+  slug           varchar(300) NOT NULL UNIQUE,
+  resumen        text,
+  contenido      text NOT NULL,
+  imagen_portada varchar(500),
+  estado         text NOT NULL DEFAULT 'borrador' CHECK (estado IN ('borrador', 'publicado', 'archivado')),
+  publicado_en   timestamptz,
+  creado_en      timestamptz NOT NULL DEFAULT now(),
+  actualizado_en timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_categoria ON blog_posts (categoria_id);
+
+CREATE TABLE IF NOT EXISTS blog_post_recetas (
+  id        integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  post_id   integer NOT NULL REFERENCES blog_posts (id) ON DELETE CASCADE,
+  receta_id integer NOT NULL REFERENCES recetas (id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_bpr_post ON blog_post_recetas (post_id);
+CREATE INDEX IF NOT EXISTS idx_bpr_receta ON blog_post_recetas (receta_id);
+
+CREATE TABLE IF NOT EXISTS sitio_secciones (
+  id             integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  clave          varchar(50) NOT NULL UNIQUE,
+  valor          text,
+  creado_en      timestamptz DEFAULT now(),
+  actualizado_en timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS sitio_servicios (
+  id          integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  icono       varchar(50) NOT NULL,
+  titulo      varchar(100) NOT NULL,
+  descripcion text NOT NULL,
+  color       varchar(20) DEFAULT '#5c8a3c',
+  activo      boolean DEFAULT true,
+  orden       integer DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS sitio_stats (
+  id       integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  numero   varchar(20) NOT NULL,
+  etiqueta varchar(60) NOT NULL,
+  orden    integer DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS sitio_testimonios (
+  id        integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  nombre    varchar(100) NOT NULL,
+  texto     text NOT NULL,
+  estrellas smallint DEFAULT 5,
+  activo    boolean DEFAULT true,
+  orden     integer DEFAULT 0,
+  creado_en timestamptz DEFAULT now()
+);
+
+-- ── Triggers de actualizado_en ────────────────────────────────────────────
+DO $$
+DECLARE t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY['usuarios', 'configuracion', 'pacientes', 'recetas', 'planes', 'blog_posts', 'sitio_secciones'] LOOP
+    EXECUTE format('DROP TRIGGER IF EXISTS trg_%1$s_actualizado ON %1$I', t);
+    EXECUTE format('CREATE TRIGGER trg_%1$s_actualizado BEFORE UPDATE ON %1$I FOR EACH ROW EXECUTE FUNCTION set_actualizado_en()', t);
+  END LOOP;
+END $$;

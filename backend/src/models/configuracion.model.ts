@@ -1,5 +1,5 @@
 import pool from "../config/database";
-import { RowDataPacket } from "mysql2";
+import { RowDataPacket } from "../config/db-types";
 
 export interface ConfiguracionRow extends RowDataPacket {
   id: number;

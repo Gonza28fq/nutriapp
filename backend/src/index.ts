@@ -16,6 +16,7 @@ import blogRoutes from "./routes/blog.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import configuracionRoutes from "./routes/configuracion.routes";
 import sitioRoutes from "./routes/sitio.routes";
+import clinicaRoutes from "./routes/clinica.routes";
 
 dotenv.config();
 
@@ -90,6 +91,7 @@ app.use("/api/blog",          blogRoutes);
 app.use("/api/dashboard",     dashboardRoutes);
 app.use("/api/configuracion", configuracionRoutes);
 app.use("/api/sitio",         sitioRoutes);
+app.use("/api",               clinicaRoutes);  // patologías, progreso, laboratorios, estudios, mediciones
 
 // ── Health check ─────────────────────────────────────────────────
 app.get("/health", (_req, res) => {

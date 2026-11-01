@@ -1,7 +1,7 @@
 import { Response, NextFunction } from "express";
 import { AuthRequest } from "../types";
 import pool from "../config/database";
-import { RowDataPacket } from "mysql2";
+import { RowDataPacket } from "../config/db-types";
 
 export const DashboardController = {
 
@@ -44,14 +44,14 @@ export const DashboardController = {
       }
 
       const [pacientesPorMes] = await pool.query<RowDataPacket[]>(
-        `SELECT DATE_FORMAT(creado_en, '%Y-%m') as mes, COUNT(*) as total
+        `SELECT to_char(creado_en, 'YYYY-MM') as mes, COUNT(*) as total
          FROM pacientes WHERE creado_en BETWEEN ? AND ?
          GROUP BY mes ORDER BY mes ASC`,
         [desde + " 00:00:00", hasta + " 23:59:59"]
       );
 
       const [consultasPorMes] = await pool.query<RowDataPacket[]>(
-        `SELECT DATE_FORMAT(fecha, '%Y-%m') as mes, COUNT(*) as total
+        `SELECT to_char(fecha, 'YYYY-MM') as mes, COUNT(*) as total
          FROM consultas WHERE fecha BETWEEN ? AND ?
          GROUP BY mes ORDER BY mes ASC`,
         [desde, hasta]
@@ -79,17 +79,17 @@ export const DashboardController = {
       const [pacientesPorEdad] = await pool.query<RowDataPacket[]>(
         `SELECT
            CASE
-             WHEN TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) < 18 THEN 'Menor 18'
-             WHEN TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) BETWEEN 18 AND 30 THEN '18-30'
-             WHEN TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) BETWEEN 31 AND 45 THEN '31-45'
-             WHEN TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) BETWEEN 46 AND 60 THEN '46-60'
-             WHEN TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) > 60 THEN 'Mayor 60'
+             WHEN date_part('year', age(fecha_nacimiento)) < 18 THEN 'Menor 18'
+             WHEN date_part('year', age(fecha_nacimiento)) BETWEEN 18 AND 30 THEN '18-30'
+             WHEN date_part('year', age(fecha_nacimiento)) BETWEEN 31 AND 45 THEN '31-45'
+             WHEN date_part('year', age(fecha_nacimiento)) BETWEEN 46 AND 60 THEN '46-60'
+             WHEN date_part('year', age(fecha_nacimiento)) > 60 THEN 'Mayor 60'
              ELSE 'Sin datos'
            END as rango,
            COUNT(*) as total
          FROM pacientes WHERE activo = TRUE
          GROUP BY rango
-         ORDER BY MIN(TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()))`
+         ORDER BY MIN(date_part('year', age(fecha_nacimiento)))`
       );
 
       const [planesPorEstado] = await pool.query<RowDataPacket[]>(

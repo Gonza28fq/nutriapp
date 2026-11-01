@@ -1,5 +1,5 @@
 import pool from "../config/database";
-import { RowDataPacket, ResultSetHeader } from "mysql2";
+import { RowDataPacket, ResultSetHeader } from "../config/db-types";
 
 export interface UsuarioRow extends RowDataPacket {
   id: number;
