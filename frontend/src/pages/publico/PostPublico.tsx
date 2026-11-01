@@ -10,11 +10,10 @@ export default function PostPublico() {
   const [cargando, setCargando] = useState(true);
 
   const API = import.meta.env.VITE_API_URL?.replace("/api", "") || "";
-  fetch(`${API}/api/blog/publico/${slug}`)
 
   useEffect(() => {
     if (!slug) return;
-    fetch(`/api/blog/publico/${slug}`)
+    fetch(`${API}/api/blog/publico/${slug}`)
       .then(r => r.json())
       .then(res => { if (res.ok) setPost(res.data); else navigate("/blog"); })
       .catch(() => navigate("/blog"))
@@ -36,92 +35,82 @@ export default function PostPublico() {
   return (
     <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", background: "#faf8f4" }}>
 
-      {/* ── Hero del post ── */}
-      <div className="relative pt-24 pb-16 overflow-hidden"
+      {/* Hero */}
+      <div className="relative pt-20 sm:pt-24 pb-12 sm:pb-16 overflow-hidden"
         style={{ background: "linear-gradient(160deg, #1c2e0f 0%, #2d4a18 100%)" }}>
         {post.imagen_portada && (
           <div className="absolute inset-0" style={{
             backgroundImage: `url('${post.imagen_portada}')`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            opacity: 0.15,
+            backgroundSize: "cover", backgroundPosition: "center", opacity: 0.15,
           }} />
         )}
-        <div className="absolute inset-0" style={{
-          background: "linear-gradient(160deg, rgba(28,46,15,0.95), rgba(45,74,24,0.9))"
-        }} />
-        <div className="relative z-10 max-w-3xl mx-auto px-6">
+        <div className="absolute inset-0"
+          style={{ background: "linear-gradient(160deg, rgba(28,46,15,0.95), rgba(45,74,24,0.9))" }} />
+        <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6">
           <button onClick={() => navigate("/blog")}
-            className="flex items-center gap-2 text-sm font-medium mb-8 transition-opacity hover:opacity-70"
+            className="flex items-center gap-2 text-sm font-medium mb-6 sm:mb-8 transition-opacity hover:opacity-70"
             style={{ color: "#8fc564" }}>
-            <ArrowLeft className="w-4 h-4" />
-            Volver al blog
+            <ArrowLeft className="w-4 h-4" /> Volver al blog
           </button>
-
-          <div className="flex items-center gap-3 flex-wrap mb-5">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap mb-4 sm:mb-5">
             {post.categoria_nombre && (
-              <span className="flex items-center gap-1 text-xs font-medium px-3 py-1 rounded-full"
+              <span className="flex items-center gap-1 text-xs font-medium px-2.5 sm:px-3 py-1 rounded-full"
                 style={{ background: "rgba(92,138,60,0.25)", border: "1px solid rgba(92,138,60,0.4)", color: "#a8d880" }}>
-                <Tag className="w-3.5 h-3.5" />
-                {post.categoria_nombre}
+                <Tag className="w-3 h-3" />{post.categoria_nombre}
               </span>
             )}
             <span className="flex items-center gap-1 text-xs" style={{ color: "#8a9e78" }}>
-              <Calendar className="w-3.5 h-3.5" />
+              <Calendar className="w-3 h-3" />
               {post.publicado_en ? formatFecha(post.publicado_en) : formatFecha(post.creado_en)}
             </span>
           </div>
-
           <h1 style={{
             fontFamily: "'Playfair Display', Georgia, serif",
-            fontSize: "clamp(1.8rem, 4vw, 3rem)",
-            fontWeight: 700,
-            lineHeight: 1.2,
-            color: "#f5ede0",
-            marginBottom: "1rem",
+            fontSize: "clamp(1.5rem, 4vw, 3rem)",
+            fontWeight: 700, lineHeight: 1.2,
+            color: "#f5ede0", marginBottom: "0.75rem",
           }}>
             {post.titulo}
           </h1>
-
           {post.resumen && (
-            <p className="text-base leading-relaxed" style={{ color: "#b8c9a0", maxWidth: "520px" }}>
+            <p className="text-sm sm:text-base leading-relaxed" style={{ color: "#b8c9a0", maxWidth: "520px" }}>
               {post.resumen}
             </p>
           )}
         </div>
       </div>
 
-      {/* ── Imagen principal ── */}
+      {/* Imagen */}
       {post.imagen_portada && (
-        <div className="max-w-3xl mx-auto px-6 -mt-8 relative z-10">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 -mt-6 sm:-mt-8 relative z-10">
           <img src={post.imagen_portada} alt={post.titulo}
-            className="w-full h-72 object-cover rounded-3xl"
+            className="w-full h-48 sm:h-72 object-cover rounded-2xl sm:rounded-3xl"
             style={{ boxShadow: "0 16px 48px rgba(0,0,0,0.15)" }}
             onError={e => (e.currentTarget.style.display = "none")} />
         </div>
       )}
 
-      {/* ── Contenido ── */}
-      <div className="max-w-3xl mx-auto px-6 py-16">
-        <div className="rounded-3xl p-10"
+      {/* Contenido */}
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
+        <div className="rounded-2xl sm:rounded-3xl p-5 sm:p-8 lg:p-10"
           style={{ background: "white", boxShadow: "0 2px 24px rgba(0,0,0,0.05)", border: "1px solid rgba(139,109,56,0.08)" }}>
-          <p className="text-base leading-loose whitespace-pre-wrap" style={{ color: "#3a2e1c", lineHeight: 1.9 }}>
+          <p className="text-sm sm:text-base leading-loose whitespace-pre-wrap" style={{ color: "#3a2e1c", lineHeight: 1.9 }}>
             {post.contenido}
           </p>
         </div>
 
-        {/* Recetas vinculadas */}
+        {/* Recetas */}
         {post.recetas && post.recetas.length > 0 && (
-          <div className="mt-12 space-y-5">
-            <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.5rem", fontWeight: 700, color: "#1c1208", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <div className="mt-10 sm:mt-12 space-y-4 sm:space-y-5">
+            <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.3rem", fontWeight: 700, color: "#1c1208", display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <Utensils className="w-5 h-5" style={{ color: "#5c8a3c" }} />
               Recetas mencionadas
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {post.recetas.map(r => (
-                <div key={r.id} className="flex items-center gap-4 p-5 rounded-2xl transition-all hover:-translate-y-0.5"
+                <div key={r.id} className="flex items-center gap-3 sm:gap-4 p-4 sm:p-5 rounded-2xl"
                   style={{ background: "white", border: "1px solid rgba(139,109,56,0.1)", boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}>
-                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
                     style={{ background: "#f0f7ea" }}>
                     <BookOpen className="w-5 h-5" style={{ color: "#5c8a3c" }} />
                   </div>
@@ -137,13 +126,12 @@ export default function PostPublico() {
           </div>
         )}
 
-        {/* CTA volver */}
-        <div className="mt-12 text-center">
+        {/* CTA */}
+        <div className="mt-10 sm:mt-12 text-center">
           <button onClick={() => navigate("/blog")}
-            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-sm font-medium transition-all hover:scale-105"
+            className="inline-flex items-center gap-2 px-6 sm:px-7 py-3 sm:py-3.5 rounded-full text-sm font-medium transition-all hover:scale-105"
             style={{ background: "#5c8a3c", color: "white", boxShadow: "0 4px 20px rgba(92,138,60,0.3)" }}>
-            <ArrowLeft className="w-4 h-4" />
-            Ver más artículos
+            <ArrowLeft className="w-4 h-4" /> Ver más artículos
           </button>
         </div>
       </div>
